@@ -1,0 +1,10 @@
+--markup markdown
+--markup-provider kramdown
+--readme README.md
+--output-dir doc
+--protected
+--private
+lib/**/*.rb
+app/**/*.rb
+-
+MIT-LICENSE

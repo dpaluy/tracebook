@@ -1,0 +1,44 @@
+<div class="tb-container">
+  <nav class="tb-breadcrumbs">
+    <%= link_to "← Back", interactions_path %>
+  </nav>
+
+  <header class="tb-header">
+    <h1>Interaction <%= @interaction.id %></h1>
+    <div class="tb-meta-grid">
+      <div><span>Provider</span><strong><%= @interaction.provider %></strong></div>
+      <div><span>Model</span><strong><%= @interaction.model %></strong></div>
+      <div><span>Status</span><strong><%= @interaction.status %></strong></div>
+      <div><span>Review</span><strong><%= @interaction.review_state %></strong></div>
+      <div><span>Tokens</span><strong><%= @interaction.total_tokens %></strong></div>
+      <div><span>Cost (¢)</span><strong><%= @interaction.cost_total_cents %></strong></div>
+    </div>
+  </header>
+
+  <% request_payload = payload_for(@interaction, :request) %>
+  <section class="tb-section" data-controller="json-viewer" data-json-viewer-collapsed-value="true">
+    <h2>Request</h2>
+    <pre data-json-viewer-target="content"><%= formatted_payload(request_payload, @interaction.request_text) %></pre>
+  </section>
+
+  <% response_payload = payload_for(@interaction, :response) %>
+  <section class="tb-section" data-controller="json-viewer">
+    <h2>Response</h2>
+    <pre data-json-viewer-target="content"><%= formatted_payload(response_payload, @interaction.response_text) %></pre>
+  </section>
+
+  <section class="tb-section">
+    <h2>Metadata</h2>
+    <pre><%= formatted_payload(@interaction.metadata, "{}") %></pre>
+  </section>
+
+  <section class="tb-section">
+    <%= form_with url: review_interaction_path(@interaction), method: :post, class: "tb-review-form" do %>
+      <div>
+        <%= label_tag :review_state, "Review State" %>
+        <%= select_tag :review_state, options_for_select(TraceBook::Interaction.review_states.keys, @interaction.review_state) %>
+      </div>
+      <%= submit_tag "Update Review" %>
+    <% end %>
+  </section>
+</div>

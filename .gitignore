@@ -1,0 +1,28 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/tmp/
+/vendor/bundle/
+
+# Test dummy app artifacts
+/test/dummy/db/*.sqlite3
+/test/dummy/db/*.sqlite3-*
+/test/dummy/log/*.log
+/test/dummy/storage/*
+!/test/dummy/storage/.keep
+/test/dummy/tmp/*
+!/test/dummy/tmp/.keep
+!/test/dummy/tmp/pids/.keep
+!/test/dummy/tmp/storage/.keep
+
+# Mac finder artifacts
+.DS_Store
+
+AGENTS.md
+CLAUDE.md
+.claude/
+.worktrees/
+.repoprompt/

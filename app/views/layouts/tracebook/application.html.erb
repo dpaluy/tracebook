@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tracebook</title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+
+  <%= yield :head %>
+
+  <%= stylesheet_link_tag "tracebook/application", media: "all", "data-turbo-track": "reload" %>
+  <%= javascript_include_tag "tracebook/application", defer: true, "data-turbo-track": "reload" %>
+</head>
+<body>
+
+<%= yield %>
+
+</body>
+</html>

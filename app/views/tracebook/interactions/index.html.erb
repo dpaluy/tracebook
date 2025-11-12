@@ -1,0 +1,105 @@
+<div class="tb-container">
+  <header class="tb-header">
+    <h1>TraceBook Interactions</h1>
+    <div class="tb-kpis">
+      <div class="tb-kpi">
+        <span>Total</span>
+        <strong><%= @kpis[:total] %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Success</span>
+        <strong><%= @kpis[:success] %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Total Tokens</span>
+        <strong><%= @kpis[:input_tokens] + @kpis[:output_tokens] %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Cost (¢)</span>
+        <strong><%= @kpis[:cost_cents] %></strong>
+      </div>
+    </div>
+  </header>
+
+  <section class="tb-filters">
+    <%= form_with url: interactions_path, method: :get, scope: :filters, data: { turbo_frame: "interactions_table" }, class: "tb-filter-form" do |form| %>
+      <div class="tb-filter-grid">
+        <div>
+          <%= form.label :provider %>
+          <%= form.select :provider, options_for_select(@providers, @filters[:provider]), include_blank: "All" %>
+        </div>
+        <div>
+          <%= form.label :model %>
+          <%= form.select :model, options_for_select(@models, @filters[:model]), include_blank: "All" %>
+        </div>
+        <div>
+          <%= form.label :project %>
+          <%= form.select :project, options_for_select(@projects, @filters[:project]), include_blank: "All" %>
+        </div>
+        <div>
+          <%= form.label :status %>
+          <%= form.select :status, options_for_select(TraceBook::Interaction.statuses.keys, @filters[:status]), include_blank: "All" %>
+        </div>
+        <div>
+          <%= form.label :review_state %>
+          <%= form.select :review_state, options_for_select(TraceBook::Interaction.review_states.keys, @filters[:review_state]), include_blank: "All" %>
+        </div>
+        <div>
+          <%= form.label :tag %>
+          <%= form.text_field :tag, value: @filters[:tag] %>
+        </div>
+        <div>
+          <%= form.label :from, "From (date)" %>
+          <%= form.date_field :from, value: @filters[:from] %>
+        </div>
+        <div>
+          <%= form.label :to, "To (date)" %>
+          <%= form.date_field :to, value: @filters[:to] %>
+        </div>
+      </div>
+      <div class="tb-filter-actions">
+        <%= form.submit "Apply" %>
+        <%= link_to "Reset", interactions_path, class: "tb-link" %>
+      </div>
+    <% end %>
+  </section>
+
+  <section class="tb-table-wrapper">
+    <%= form_with url: bulk_review_interactions_path, method: :post, data: { controller: "keyboard" }, html: { tabindex: 0 } do %>
+      <%= hidden_field_tag :review_state, "approved", data: { keyboard_target: "reviewState" } %>
+      <div class="tb-table-actions">
+        <button type="submit">Bulk Approve</button>
+        <button type="submit" formaction="<%= exports_path(format: :csv, filters: @filters.to_h) %>" formmethod="post">Export CSV</button>
+      </div>
+
+      <turbo-frame id="interactions_table">
+        <table class="tb-table" data-keyboard-target="table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" data-keyboard-target="toggleAll"></th>
+              <th>Timestamp</th>
+              <th>Provider</th>
+              <th>Model</th>
+              <th>Status</th>
+              <th>Tokens</th>
+              <th>Cost (¢)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @interactions.each do |interaction| %>
+              <tr data-controller="row" data-keyboard-target="row">
+                <td><%= check_box_tag "interaction_ids[]", interaction.id, false, data: { keyboard_target: "checkbox" } %></td>
+                <td><%= link_to interaction.created_at.strftime("%Y-%m-%d %H:%M"), interaction_path(interaction) %></td>
+                <td><%= interaction.provider %></td>
+                <td><%= interaction.model %></td>
+                <td><%= interaction.status %></td>
+                <td><%= interaction.total_tokens %></td>
+                <td><%= interaction.cost_total_cents %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </turbo-frame>
+    <% end %>
+  </section>
+</div>
