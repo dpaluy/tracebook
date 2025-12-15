@@ -99,6 +99,9 @@
             <% end %>
           </tbody>
         </table>
+        <nav class="tb-pagination" aria-label="Interactions pagination">
+          <%== @pagy.series_nav(anchor_string: 'data-turbo-frame="interactions_table"') %>
+        </nav>
       </turbo-frame>
     <% end %>
   </section>

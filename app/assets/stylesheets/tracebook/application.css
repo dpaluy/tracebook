@@ -171,3 +171,41 @@ pre {
   border-radius: 0.5rem;
   overflow-x: auto;
 }
+
+.tb-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.tb-pagination nav {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.tb-pagination a,
+.tb-pagination span {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--tb-border);
+  border-radius: 0.375rem;
+  text-decoration: none;
+  color: var(--tb-text);
+  font-size: 0.875rem;
+}
+
+.tb-pagination a:hover {
+  background: rgba(11, 95, 255, 0.08);
+  border-color: var(--tb-accent);
+}
+
+.tb-pagination .current {
+  background: var(--tb-accent);
+  color: white;
+  border-color: var(--tb-accent);
+}
+
+.tb-pagination .disabled {
+  color: var(--tb-muted);
+  cursor: not-allowed;
+}

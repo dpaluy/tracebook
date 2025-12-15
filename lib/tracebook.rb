@@ -1,3 +1,4 @@
+require "pagy"
 require "tracebook/version"
 require "tracebook/engine"
 require "tracebook/errors"

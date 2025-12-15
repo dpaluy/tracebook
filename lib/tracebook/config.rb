@@ -74,6 +74,10 @@ module Tracebook
     #   @return [Boolean] Auto-enable ActiveAgent adapter on boot (default: false)
     attr_accessor :auto_subscribe_active_agent
 
+    # @!attribute [rw] per_page
+    #   @return [Integer] Number of interactions per page in dashboard (default: 100)
+    attr_accessor :per_page
+
     # Creates a new configuration with default values.
     #
     # @return [Config]
@@ -87,6 +91,7 @@ module Tracebook
       @custom_redactors = []
       @auto_subscribe_ruby_llm = false
       @auto_subscribe_active_agent = false
+      @per_page = 100
     end
 
     # Returns true if configuration has been finalized.
