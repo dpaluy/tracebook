@@ -23,6 +23,7 @@
 
 AGENTS.md
 CLAUDE.md
+.agents.yml
 .claude/
 .worktrees/
 .repoprompt/

@@ -1,5 +1,8 @@
 # TraceBook
 
+[![Gem Version](https://img.shields.io/gem/v/tracebook.svg)](https://rubygems.org/gems/tracebook)
+[![CI](https://github.com/dpaluy/tracebook/actions/workflows/ci.yml/badge.svg)](https://github.com/dpaluy/tracebook/actions/workflows/ci.yml)
+
 TraceBook is a Rails engine that ingests, redacts, encrypts, and reviews LLM interactions. It ships with a Hotwire UI, cost tracking, rollup analytics, and adapters for popular Ruby LLM libraries.
 
 ## Features
@@ -15,8 +18,8 @@ TraceBook is a Rails engine that ingests, redacts, encrypts, and reviews LLM int
 ## Requirements
 
 - Ruby 3.2+
-- Rails 7.1+ (Rails 8.1+ recommended)
-- ActiveJob backend (`:async` for development; Sidekiq/GoodJob for production)
+- Rails 8.1+
+- ActiveJob backend (`:async` for development; Sidekiq/SolidQueue for production)
 - Database with JSONB support (PostgreSQL recommended)
 
 ## Table of Contents
@@ -708,7 +711,7 @@ Configure ActiveJob to use a production queue backend:
 
 ```ruby
 # config/environments/production.rb
-config.active_job.queue_adapter = :sidekiq # or :good_job, :delayed_job, etc.
+config.active_job.queue_adapter = :sidekiq # or :solid_queue, etc.
 ```
 
 ### Encryption Keys
@@ -829,25 +832,6 @@ class ActiveSupport::TestCase
       config.authorize = ->(*) { true }
       config.persist_async = false # Inline for tests
     end
-  end
-end
-```
-
-### Factories (FactoryBot)
-
-```ruby
-# test/factories/tracebook_interactions.rb
-FactoryBot.define do
-  factory :tracebook_interaction, class: "TraceBook::Interaction" do
-    provider { "openai" }
-    model { "gpt-4o-mini" }
-    request { { messages: [{ role: "user", content: "Hello" }] } }
-    response { { choices: [{ message: { content: "Hi!" } }] } }
-    input_tokens { 10 }
-    output_tokens { 5 }
-    latency_ms { 150 }
-    status { :success }
-    occurred_at { Time.current }
   end
 end
 ```
