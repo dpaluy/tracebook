@@ -11,7 +11,7 @@ module Tracebook
       @filters = filter_params
       scope = Interaction.filtered(@filters)
       @kpis = kpis_for(scope)
-      @pagy, @interactions = pagy(scope.order(created_at: :desc), limit: Tracebook.config.per_page, request: request)
+      @pagy, @interactions = pagy(scope.order(created_at: :desc), limit: Tracebook.config.per_page)
       @providers = Interaction.distinct.order(:provider).pluck(:provider)
       @models = Interaction.distinct.order(:model).pluck(:model)
       @projects = Interaction.distinct.order(:project).pluck(:project).compact
