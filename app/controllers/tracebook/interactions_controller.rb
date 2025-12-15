@@ -7,13 +7,11 @@ module Tracebook
     before_action :set_interaction, only: [ :show, :review ]
     helper InteractionsHelper
 
-    PER_PAGE = 100
-
     def index
       @filters = filter_params
       scope = Interaction.filtered(@filters)
       @kpis = kpis_for(scope)
-      @pagy, @interactions = pagy(scope.order(created_at: :desc), limit: PER_PAGE, request: request)
+      @pagy, @interactions = pagy(scope.order(created_at: :desc), limit: Tracebook.config.per_page, request: request)
       @providers = Interaction.distinct.order(:provider).pluck(:provider)
       @models = Interaction.distinct.order(:model).pluck(:model)
       @projects = Interaction.distinct.order(:project).pluck(:project).compact
