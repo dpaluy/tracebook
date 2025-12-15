@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+TraceBook.configure do |config|
+  # config.project_name = "My App"
+
+  config.persist_async = Rails.env.production?
+
+  # config.auto_subscribe_ruby_llm = true
+  # config.auto_subscribe_active_agent = true
+end
