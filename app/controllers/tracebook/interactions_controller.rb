@@ -2,6 +2,8 @@
 
 module Tracebook
   class InteractionsController < ApplicationController
+    include Pagy::Method
+
     before_action :set_interaction, only: [ :show, :review ]
     helper InteractionsHelper
 
@@ -11,7 +13,7 @@ module Tracebook
       @filters = filter_params
       scope = Interaction.filtered(@filters)
       @kpis = kpis_for(scope)
-      @interactions = scope.order(created_at: :desc).limit(PER_PAGE)
+      @pagy, @interactions = pagy(:offset, scope.order(created_at: :desc), limit: PER_PAGE)
       @providers = Interaction.distinct.order(:provider).pluck(:provider)
       @models = Interaction.distinct.order(:model).pluck(:model)
       @projects = Interaction.distinct.order(:project).pluck(:project).compact

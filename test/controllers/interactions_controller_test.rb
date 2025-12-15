@@ -53,5 +53,37 @@ module TraceBook
 
       assert_response :success
     end
+
+    test "renders pagination controls in turbo frame" do
+      get interactions_path
+
+      assert_response :success
+      assert_select "turbo-frame#interactions_table" do
+        assert_select "nav.tb-pagination"
+      end
+    end
+
+    test "pagination links include turbo frame target" do
+      # Create enough interactions to trigger pagination
+      110.times do |i|
+        Interaction.create!(provider: "openai", model: "gpt-4o-#{i}", status: :success, total_tokens: 10)
+      end
+
+      get interactions_path
+
+      assert_response :success
+      assert_match 'data-turbo-frame="interactions_table"', @response.body
+    end
+
+    test "pagination preserves filters across pages" do
+      110.times do |i|
+        Interaction.create!(provider: "anthropic", model: "claude-#{i}", status: :success, total_tokens: 10)
+      end
+
+      get interactions_path, params: { filters: { provider: "anthropic" }, page: 2 }
+
+      assert_response :success
+      assert_select "select[name='filters[provider]'] option[selected]", text: "anthropic"
+    end
   end
 end
