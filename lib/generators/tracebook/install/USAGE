@@ -1,0 +1,10 @@
+Description:
+    Install TraceBook by copying migrations and creating an initializer.
+
+Example:
+    bin/rails generate tracebook:install
+
+After running:
+    1. Run: bin/rails db:migrate
+    2. Mount the engine in config/routes.rb
+    3. Configure authorization in the initializer

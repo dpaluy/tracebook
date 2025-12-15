@@ -34,73 +34,30 @@ TraceBook is a Rails engine that ingests, redacts, encrypts, and reviews LLM int
 - [Cost Tracking](#cost-tracking)
 - [Reviewing Data](#reviewing-data)
 - [Production Setup](#production-setup)
+  - [Securing the Dashboard](#securing-the-dashboard)
 - [Development & Testing](#development--testing)
 
 ## Installation & Setup
 
-### 1. Add the gem
-
-```ruby
-# Gemfile
-gem "tracebook" # or path: "../gems/tracebook" for local development
-```
-
 ```bash
-bundle install
-```
-
-### 2. Install migrations
-
-Rails engines keep migrations inside the gem. Copy them into the host app and migrate:
-
-```bash
-bin/rails railties:install:migrations FROM=tracebook
+bundle add tracebook
+bin/rails generate tracebook:install
 bin/rails db:migrate
 ```
 
-This creates the following tables:
+The install generator copies migrations and creates `config/initializers/tracebook.rb`.
 
-- **`tracebook_interactions`** — Main table for LLM calls
-  - Encrypted columns: `request`, `response`, `review_comment`
-  - Indexes: `provider`, `model`, `review_state`, `session_id`, `parent_id`, `occurred_at`
-  - Fields: provider, model, request (JSONB), response (JSONB), usage stats, duration, review metadata, tags, etc.
+### Mount the engine
 
-- **`tracebook_pricing_rules`** — Cost per 1k tokens for provider/model patterns
-  - Fields: `provider`, `model_pattern` (glob), `input_per_1k`, `output_per_1k`, `currency`, `effective_from`
-  - Example: `provider: "openai", model_pattern: "gpt-4o*", input_per_1k: 2.50, output_per_1k: 10.00`
-
-- **`tracebook_redaction_rules`** — PII detection patterns
-  - Fields: `name`, `pattern` (regex), `detector` (class name), `replacement`, `enabled`
-  - Built-in rules: email addresses, SSNs, credit cards, phone numbers
-
-- **`tracebook_rollup_daily`** — Aggregated metrics by date/provider/model/project
-  - Composite PK: `(date, provider, model, project)`
-  - Fields: call counts, token sums, cost totals, error rates, avg duration
-
-Re-run `railties:install:migrations` whenever the gem adds new migrations.
-
-### 3. Mount the engine
-
-Update `config/routes.rb` to expose the UI:
+Add to `config/routes.rb`:
 
 ```ruby
-# config/routes.rb
-Rails.application.routes.draw do
-  # Wrap with authentication/authorization
-  authenticate :user, ->(u) { u.admin? } do
-    mount TraceBook::Engine => "/tracebook"
-  end
-
-  # Or use a constraint
-  constraints -> (req) { req.session[:user_id] && User.find(req.session[:user_id])&.admin? } do
-    mount TraceBook::Engine => "/tracebook"
-  end
-end
+mount TraceBook::Engine => "/tracebook"
 ```
 
-Only trusted reviewers should access the dashboard.
+See [Securing the Dashboard](#securing-the-dashboard) for authentication options.
 
-### 4. Configure encryption
+### Configure encryption
 
 TraceBook uses ActiveRecord::Encryption to protect sensitive data. Generate keys and configure in your credentials:
 
@@ -136,76 +93,32 @@ Without these keys, TraceBook will raise an error when persisting interactions.
 
 ## Configuration
 
-Create `config/initializers/tracebook.rb`:
+The install generator creates `config/initializers/tracebook.rb` with sensible defaults.
+
+Available options:
 
 ```ruby
 TraceBook.configure do |config|
-  # ========================================
-  # REQUIRED: Authorization
-  # ========================================
-  # This proc receives (user, action, resource) and must return true/false
-  # Actions: :read, :review, :export
-  config.authorize = ->(user, action, resource) do
-    case action
-    when :read
-      user&.admin? || user&.reviewer?
-    when :review
-      user&.admin?
-    when :export
-      user&.admin?
-    else
-      false
-    end
-  end
+  # Project identifier for filtering in the dashboard
+  config.project_name = "My App"
 
-  # ========================================
-  # OPTIONAL: Project & Metadata
-  # ========================================
-  # Project identifier for this application
-  config.project_name = "TraceBook Dashboard"
-
-  # ========================================
-  # OPTIONAL: Persistence
-  # ========================================
-  # Use async jobs for persistence (recommended for production)
-  # When true, TraceBook.record! enqueues PersistInteractionJob
-  # When false, writes happen inline (useful for tests)
+  # Use async jobs for persistence (default: true)
+  # Set to false for tests or simple setups
   config.persist_async = Rails.env.production?
 
-  # Payload size threshold for ActiveStorage spillover (bytes)
-  # Interactions larger than this are stored in ActiveStorage
-  config.inline_payload_bytes = 64 * 1024 # 64KB
+  # Payload size threshold for ActiveStorage spillover (default: 64KB)
+  config.inline_payload_bytes = 64 * 1024
 
-  # ========================================
-  # OPTIONAL: Cost Tracking
-  # ========================================
-  # Default currency for cost calculations
-  config.default_currency = "USD"
+  # Auto-enable adapters on boot
+  config.auto_subscribe_ruby_llm = true
+  config.auto_subscribe_active_agent = true
 
-  # ========================================
-  # OPTIONAL: Export
-  # ========================================
-  # Available export formats
-  config.export_formats = %i[csv ndjson]
-
-  # ========================================
-  # OPTIONAL: Redaction
-  # ========================================
-  # Custom PII redactors (in addition to built-in email/SSN/etc)
-  config.redactors += [
-    ->(payload) {
-      # Example: Redact API keys
-      payload.gsub(/api_key["\s]*[:=]["\s]*\K[\w-]+/, "[REDACTED]")
-    },
-    ->(payload) {
-      # Example: Redact authorization headers
-      payload.gsub(/authorization["\s]*:["\s]*\K[^"]+/, "[REDACTED]")
-    }
+  # Custom PII redactors (in addition to built-in email/phone/card)
+  config.custom_redactors += [
+    ->(payload) { payload.gsub(/api_key=\w+/, "api_key=[REDACTED]") }
   ]
 end
 ```
-
-**Important**: The `authorize` proc is mandatory. TraceBook will raise an error on boot if it's missing.
 
 Configuration is frozen after the block runs. Call `TraceBook.reset_configuration!` in tests when you need a clean slate.
 
@@ -705,6 +618,40 @@ Only `admin` users (as defined in your `authorize` proc) can change review state
 
 ## Production Setup
 
+### Securing the Dashboard
+
+The dashboard should only be accessible to trusted reviewers. Here are common approaches:
+
+**Devise with admin check:**
+
+```ruby
+# config/routes.rb
+authenticate :user, ->(u) { u.admin? } do
+  mount TraceBook::Engine => "/tracebook"
+end
+```
+
+**Session-based constraint:**
+
+```ruby
+# config/routes.rb
+constraints ->(req) { req.session[:admin] } do
+  mount TraceBook::Engine => "/tracebook"
+end
+```
+
+**HTTP Basic Auth (simple setups):**
+
+```ruby
+# config/routes.rb
+TraceBook::Engine.middleware.use Rack::Auth::Basic do |username, password|
+  ActiveSupport::SecurityUtils.secure_compare(username, ENV["TRACEBOOK_USER"]) &
+    ActiveSupport::SecurityUtils.secure_compare(password, ENV["TRACEBOOK_PASSWORD"])
+end
+
+mount TraceBook::Engine => "/tracebook"
+```
+
 ### Queue Adapter
 
 Configure ActiveJob to use a production queue backend:
@@ -812,10 +759,10 @@ bundle exec rubocop --fix-unsafe # Fix style issues
 
 ### Inside a host application
 
-After pulling new migrations from the gem:
+After updating the gem, install any new migrations:
 
 ```bash
-bin/rails railties:install:migrations FROM=tracebook
+bin/rails tracebook:install:migrations
 bin/rails db:migrate
 ```
 
