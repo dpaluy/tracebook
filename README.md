@@ -3,11 +3,13 @@
 [![Gem Version](https://img.shields.io/gem/v/tracebook.svg)](https://rubygems.org/gems/tracebook)
 [![CI](https://github.com/dpaluy/tracebook/actions/workflows/ci.yml/badge.svg)](https://github.com/dpaluy/tracebook/actions/workflows/ci.yml)
 
-TraceBook is a Rails engine that ingests, redacts, encrypts, and reviews LLM interactions. It ships with a Hotwire UI, cost tracking, rollup analytics, and adapters for popular Ruby LLM libraries.
+> **Note:** This gem is in active development. APIs may change before 1.0 release.
+
+TraceBook is a Rails engine that ingests, redacts, and reviews LLM interactions with optional encryption. It ships with a Hotwire UI, cost tracking, rollup analytics, and adapters for popular Ruby LLM libraries.
 
 ## Features
 
-- **Privacy-first**: Request/response payloads are redacted (PII removal) and encrypted at rest
+- **Privacy-first**: Request/response payloads are redacted (PII removal) with optional encryption at rest
 - **Cost tracking**: Automatic token usage and cost calculation per provider/model
 - **Review workflow**: Approve, flag, or reject interactions with audit trail
 - **Hierarchical sessions**: Track parent-child relationships for agent chains
@@ -57,12 +59,13 @@ mount TraceBook::Engine => "/tracebook"
 
 See [Securing the Dashboard](#securing-the-dashboard) for authentication options.
 
-### Configure encryption
+### Optional: Configure encryption
 
-TraceBook uses ActiveRecord::Encryption to protect sensitive data. Generate keys and configure in your credentials:
+TraceBook supports ActiveRecord::Encryption for encrypting sensitive payload data at rest. This is **optional** but recommended for production environments handling sensitive data.
+
+**Step 1: Generate encryption keys**
 
 ```bash
-# Generate encryption keys
 bin/rails db:encryption:init
 ```
 
@@ -75,7 +78,7 @@ active_record_encryption:
   key_derivation_salt: [generated_salt]
 ```
 
-Add these to `config/credentials.yml.enc`:
+**Step 2: Add keys to credentials**
 
 ```bash
 EDITOR=vim bin/rails credentials:edit
@@ -89,7 +92,20 @@ active_record_encryption:
   key_derivation_salt: <generated_salt>
 ```
 
-Without these keys, TraceBook will raise an error when persisting interactions.
+**Step 3: Enable encryption in your app**
+
+Create an initializer to add encryption to the Interaction model:
+
+```ruby
+# config/initializers/tracebook_encryption.rb
+Rails.application.config.after_initialize do
+  Tracebook::Interaction.class_eval do
+    encrypts :request_payload, :response_payload
+  end
+end
+```
+
+> **Note**: Enabling encryption on an existing database requires migrating existing unencrypted data. See the [Rails encryption guide](https://guides.rubyonrails.org/active_record_encryption.html) for migration strategies.
 
 ## Configuration
 
@@ -184,7 +200,7 @@ When `config.persist_async = true`, the interaction is enqueued via `Tracebook::
 
 ### Background Jobs & Rollups
 
-**PersistInteractionJob** handles redaction, encryption, cost calculation, and writes the `Interaction` record.
+**PersistInteractionJob** handles redaction, cost calculation, and writes the `Interaction` record.
 
 **DailyRollupsJob** summarizes counts, token totals, and cost into `RollupDaily` rows. Schedule it nightly per provider/model/project:
 
@@ -661,9 +677,9 @@ Configure ActiveJob to use a production queue backend:
 config.active_job.queue_adapter = :sidekiq # or :solid_queue, etc.
 ```
 
-### Encryption Keys
+### Encryption Keys (if enabled)
 
-**Important:** Store encryption keys securely. Never commit them to version control.
+If you've enabled payload encryption (see [Configure encryption](#optional-configure-encryption)), store keys securely:
 
 - Use Rails encrypted credentials (`bin/rails credentials:edit`)
 - Or environment variables with a secrets manager (AWS Secrets Manager, HashiCorp Vault)
