@@ -3,13 +3,16 @@
 module Tracebook
   # ActiveRecord model for LLM interactions.
   #
-  # Stores all data related to an LLM API call including request/response payloads
-  # (encrypted), usage metrics, cost, review state, and relationships.
+  # Stores all data related to an LLM API call including request/response payloads,
+  # usage metrics, cost, review state, and relationships.
   #
-  # ## Encrypted Fields
-  # - `request_payload` - Full request sent to provider
-  # - `response_payload` - Full response from provider
+  # ## Payload Fields
+  # - `request_payload` - Full request sent to provider (JSON)
+  # - `response_payload` - Full response from provider (JSON)
   # - `review_comment` - Reviewer's comments
+  #
+  # Note: Encryption is optional. See README for instructions on enabling
+  # ActiveRecord::Encryption for these fields.
   #
   # ## Enums
   # - `status`: `:success`, `:error`, `:canceled`
