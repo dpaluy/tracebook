@@ -8,7 +8,7 @@
     <div class="tb-meta-grid">
       <div><span>Provider</span><strong><%= @interaction.provider %></strong></div>
       <div><span>Model</span><strong><%= @interaction.model %></strong></div>
-      <div><span>Status</span><strong><%= @interaction.status %></strong></div>
+      <div><span>Status</span><strong><%= status_badge(@interaction.status) %></strong></div>
       <div><span>Review</span><strong><%= @interaction.review_state %></strong></div>
       <div><span>Tokens</span><strong><%= @interaction.total_tokens %></strong></div>
       <div><span>Cost (¢)</span><strong><%= @interaction.cost_total_cents %></strong></div>

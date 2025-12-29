@@ -31,5 +31,14 @@ module Tracebook
     rescue JSON::GeneratorError, TypeError
       fallback_text ? fallback_text.to_s : payload.to_s
     end
+
+    def status_badge(status)
+      css_class = case status.to_s
+      when "success" then "tb-status tb-status-success"
+      when "error", "failed" then "tb-status tb-status-error"
+      else "tb-status tb-status-pending"
+      end
+      content_tag(:span, status, class: css_class)
+    end
   end
 end
