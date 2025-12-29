@@ -54,5 +54,54 @@ module Tracebook
     def cents_to_human(cents)
       number_to_currency(cents.to_i / 100.0)
     end
+
+    def trackable_link(interaction)
+      return "—" if interaction.trackable_id.blank?
+
+      begin
+        trackable_class = interaction.trackable_type.safe_constantize
+        return fallback_trackable_display(interaction) unless trackable_class
+
+        trackable = trackable_class.find_by(id: interaction.trackable_id)
+        return content_tag(:span, "Deleted", class: "tb-muted") if trackable.nil?
+
+        trackable_name = trackable.try(:name) || trackable.try(:title) || trackable.try(:email) ||
+                         "#{interaction.trackable_type.demodulize}##{interaction.trackable_id}"
+
+        begin
+          link_to trackable_name, main_app.polymorphic_path(trackable), class: "tb-link"
+        rescue ActionController::UrlGenerationError
+          content_tag(:span, trackable_name, class: "tb-muted", title: "No route defined")
+        end
+      rescue StandardError => e
+        Rails.logger.warn "[TraceBook] Failed to load trackable: #{e.message}"
+        fallback_trackable_display(interaction)
+      end
+    end
+
+    def fallback_trackable_display(interaction)
+      type_name = interaction.trackable_type.to_s.demodulize
+      content_tag(:span, "#{type_name}##{interaction.trackable_id}", class: "tb-muted")
+    end
+
+    def latency_display(latency_ms)
+      return "—" if latency_ms.nil?
+
+      if latency_ms >= 1000
+        "#{(latency_ms / 1000.0).round(2)}s"
+      else
+        "#{latency_ms}ms"
+      end
+    end
+
+    def token_breakdown(interaction)
+      input = interaction.input_tokens || 0
+      output = interaction.output_tokens || 0
+      "#{number_with_delimiter(input)} / #{number_with_delimiter(output)}"
+    end
+
+    def trackable_type_options(trackable_types)
+      trackable_types.map { |type| [type.demodulize, type] }
+    end
   end
 end
