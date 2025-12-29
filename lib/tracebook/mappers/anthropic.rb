@@ -47,7 +47,6 @@ module Tracebook
           end
         end.compact.join("\n\n")
       end
-
     end
   end
 end
