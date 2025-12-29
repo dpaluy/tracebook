@@ -32,6 +32,9 @@
         this.index = 0;
         this.updateSelection();
         this.element.addEventListener("keydown", this.handleKeydown.bind(this));
+        if (this.hasToggleAllTarget) {
+          this.toggleAllTarget.addEventListener("change", this.toggleAll.bind(this));
+        }
       }
 
       handleKeydown(event) {
@@ -52,6 +55,13 @@
             checkbox.checked = !checkbox.checked;
           }
         }
+      }
+
+      toggleAll() {
+        const checked = this.toggleAllTarget.checked;
+        this.checkboxTargets.forEach((checkbox) => {
+          checkbox.checked = checked;
+        });
       }
 
       updateSelection() {

@@ -21,6 +21,14 @@ module TraceBook
       assert_match "TraceBook Interactions", @response.body
     end
 
+    test "index displays review column" do
+      get interactions_path
+
+      assert_response :success
+      assert_select "th", text: "Review"
+      assert_select ".tb-status", text: "pending"
+    end
+
     test "renders show" do
       interaction = Interaction.first
       get interaction_path(interaction)
@@ -46,6 +54,18 @@ module TraceBook
       assert_redirected_to interactions_path
       assert_equal "Invalid review state: bad", flash[:alert]
       assert_equal "pending", interaction.reload.review_state
+    end
+
+    test "bulk review approves selected interactions" do
+      interaction1 = Interaction.first
+      interaction2 = Interaction.create!(provider: "anthropic", model: "claude-3", status: :success, total_tokens: 20)
+
+      post bulk_review_interactions_path, params: { review_state: "approved", interaction_ids: [ interaction1.id, interaction2.id ] }
+
+      assert_redirected_to interactions_path
+      assert_equal "Updated 2 interactions", flash[:notice]
+      assert_equal "approved", interaction1.reload.review_state
+      assert_equal "approved", interaction2.reload.review_state
     end
 
     test "handles tag filter safely" do

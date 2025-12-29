@@ -26,5 +26,33 @@ module TraceBook
 
       assert_equal({ "foo" => "bar" }, payload_for(interaction, :request))
     end
+
+    test "review_badge renders approved with success style" do
+      result = review_badge("approved")
+
+      assert_includes result, "tb-status-success"
+      assert_includes result, "approved"
+    end
+
+    test "review_badge renders flagged with warning style" do
+      result = review_badge("flagged")
+
+      assert_includes result, "tb-status-warning"
+      assert_includes result, "flagged"
+    end
+
+    test "review_badge renders rejected with error style" do
+      result = review_badge("rejected")
+
+      assert_includes result, "tb-status-error"
+      assert_includes result, "rejected"
+    end
+
+    test "review_badge renders pending with pending style" do
+      result = review_badge("pending")
+
+      assert_includes result, "tb-status-pending"
+      assert_includes result, "pending"
+    end
   end
 end
