@@ -70,7 +70,7 @@
     <%= form_with url: bulk_review_interactions_path, method: :post, data: { controller: "bulk-select" } do %>
       <%= hidden_field_tag :review_state, "approved" %>
       <div class="tb-table-actions">
-        <button type="submit">Bulk Approve</button>
+        <button type="submit" data-bulk-select-target="submitButton" disabled>Bulk Approve</button>
         <button type="submit" class="tb-btn-secondary" formaction="<%= exports_path(format: :csv, filters: @filters.to_h) %>" formmethod="post">Export CSV</button>
       </div>
 
@@ -91,7 +91,7 @@
           <tbody>
             <% @interactions.each do |interaction| %>
               <tr>
-                <td><%= check_box_tag "interaction_ids[]", interaction.id, false, data: { bulk_select_target: "checkbox" } %></td>
+                <td><%= check_box_tag "interaction_ids[]", interaction.id, false, data: { bulk_select_target: "checkbox", action: "change->bulk-select#checkboxChanged" } %></td>
                 <td><%= link_to interaction.created_at.strftime("%Y-%m-%d %H:%M"), interaction_path(interaction) %></td>
                 <td><%= interaction.provider %></td>
                 <td><%= interaction.model %></td>
