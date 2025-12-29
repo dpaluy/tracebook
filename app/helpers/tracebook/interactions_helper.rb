@@ -41,6 +41,16 @@ module Tracebook
       content_tag(:span, status, class: css_class)
     end
 
+    def review_badge(review_state)
+      css_class = case review_state.to_s
+      when "approved" then "tb-status tb-status-success"
+      when "flagged" then "tb-status tb-status-warning"
+      when "rejected" then "tb-status tb-status-error"
+      else "tb-status tb-status-pending"
+      end
+      content_tag(:span, review_state, class: css_class)
+    end
+
     def cents_to_human(cents)
       number_to_currency(cents.to_i / 100.0)
     end

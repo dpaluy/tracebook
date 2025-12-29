@@ -83,6 +83,7 @@
               <th>Provider</th>
               <th>Model</th>
               <th>Status</th>
+              <th>Review</th>
               <th>Tokens</th>
               <th>Cost</th>
             </tr>
@@ -95,6 +96,7 @@
                 <td><%= interaction.provider %></td>
                 <td><%= interaction.model %></td>
                 <td><%= status_badge(interaction.status) %></td>
+                <td><%= review_badge(interaction.review_state) %></td>
                 <td><%= interaction.total_tokens %></td>
                 <td><%= cents_to_human(interaction.cost_total_cents) %></td>
               </tr>

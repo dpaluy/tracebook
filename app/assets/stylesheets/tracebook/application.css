@@ -357,6 +357,11 @@ input[type="submit"]:focus {
   background: var(--tb-error-bg);
 }
 
+.tb-status-warning {
+  color: var(--tb-warning);
+  background: var(--tb-warning-bg);
+}
+
 .tb-status-pending {
   color: var(--tb-warning);
   background: var(--tb-warning-bg);
