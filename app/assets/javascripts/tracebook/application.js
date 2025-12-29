@@ -29,20 +29,27 @@
       }
 
       connect() {
-        this.index = 0;
-        this.updateSelection();
+        this.index = -1;
         this.element.addEventListener("keydown", this.handleKeydown.bind(this));
       }
 
       handleKeydown(event) {
         if (["j", "J"].includes(event.key)) {
           event.preventDefault();
-          this.index = Math.min(this.rowTargets.length - 1, this.index + 1);
+          if (this.index === -1) {
+            this.index = 0;
+          } else {
+            this.index = Math.min(this.rowTargets.length - 1, this.index + 1);
+          }
           this.updateSelection();
         }
         if (["k", "K"].includes(event.key)) {
           event.preventDefault();
-          this.index = Math.max(0, this.index - 1);
+          if (this.index === -1) {
+            this.index = 0;
+          } else {
+            this.index = Math.max(0, this.index - 1);
+          }
           this.updateSelection();
         }
         if ([" ", "Enter"].includes(event.key)) {
