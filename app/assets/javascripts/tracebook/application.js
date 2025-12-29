@@ -18,7 +18,11 @@
 
     class BulkSelectController extends window.Stimulus.Controller {
       static get targets() {
-        return ["toggleAll", "checkbox"];
+        return ["toggleAll", "checkbox", "submitButton"];
+      }
+
+      connect() {
+        this.updateButtonState();
       }
 
       toggleAll() {
@@ -26,6 +30,16 @@
         this.checkboxTargets.forEach((checkbox) => {
           checkbox.checked = checked;
         });
+        this.updateButtonState();
+      }
+
+      checkboxChanged() {
+        this.updateButtonState();
+      }
+
+      updateButtonState() {
+        const hasSelectedCheckboxes = this.checkboxTargets.some((checkbox) => checkbox.checked);
+        this.submitButtonTarget.disabled = !hasSelectedCheckboxes;
       }
     }
 
