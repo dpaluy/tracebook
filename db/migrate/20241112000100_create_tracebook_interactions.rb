@@ -23,8 +23,8 @@ class CreateTracebookInteractions < ActiveRecord::Migration[8.0]
       t.string :error_class
       t.text :error_message
 
-      t.string :user_type
-      t.bigint :user_id
+      t.string :trackable_type
+      t.bigint :trackable_id
       t.bigint :parent_id
 
       t.text :tags
@@ -50,6 +50,6 @@ class CreateTracebookInteractions < ActiveRecord::Migration[8.0]
     add_index :tracebook_interactions, :status
     add_index :tracebook_interactions, :review_state
     add_index :tracebook_interactions, :parent_id
-    add_index :tracebook_interactions, [ :user_type, :user_id ]
+    add_index :tracebook_interactions, [ :trackable_type, :trackable_id ]
   end
 end

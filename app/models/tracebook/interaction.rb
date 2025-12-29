@@ -20,7 +20,7 @@ module Tracebook
   #
   # ## Associations
   # - `parent` - Parent interaction for hierarchical chains
-  # - `user` - Polymorphic association to user who triggered the call
+  # - `trackable` - Polymorphic association to context object (User, Session, Chat, etc.)
   # - `request_payload_blob` - ActiveStorage blob for large requests
   # - `response_payload_blob` - ActiveStorage blob for large responses
   #
@@ -45,9 +45,9 @@ module Tracebook
     #   @return [Tracebook::Interaction, nil] Parent interaction for hierarchical chains
     belongs_to :parent, class_name: "Tracebook::Interaction", optional: true
 
-    # @!attribute [rw] user
-    #   @return [ActiveRecord::Base, nil] Polymorphic user who triggered this interaction
-    belongs_to :user, polymorphic: true, optional: true
+    # @!attribute [rw] trackable
+    #   @return [ActiveRecord::Base, nil] Polymorphic trackable object (User, Session, Chat, etc.)
+    belongs_to :trackable, polymorphic: true, optional: true
 
     # @!attribute [rw] request_payload_blob
     #   @return [ActiveStorage::Blob, nil] Blob for large request payloads
@@ -87,6 +87,9 @@ module Tracebook
     scope :tagged_with, ->(tag) {
       where("tags LIKE ?", "%#{sanitize_sql_like(tag)}%") if tag.present?
     }
+    scope :by_trackable_type, ->(type) { where(trackable_type: type) if type.present? }
+    scope :by_trackable_id, ->(id) { where(trackable_id: id) if id.present? }
+    scope :by_trackable, ->(type, id) { by_trackable_type(type).by_trackable_id(id) }
 
     def self.filtered(params)
       by_provider(params[:provider])
@@ -94,6 +97,8 @@ module Tracebook
         .by_project(params[:project])
         .by_status(params[:status])
         .by_review_state(params[:review_state])
+        .by_trackable_type(params[:trackable_type])
+        .by_trackable_id(params[:trackable_id])
         .tagged_with(params[:tag])
         .between_dates(params[:from], params[:to])
     end

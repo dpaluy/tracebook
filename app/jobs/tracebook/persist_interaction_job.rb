@@ -93,7 +93,7 @@ module Tracebook
 
       ActiveRecord::Base.transaction do
         Interaction.create!(attributes).tap do |interaction|
-          interaction.user = normalized.user if normalized.user
+          interaction.trackable = normalized.trackable if normalized.trackable
           persist_payloads(interaction, normalized)
           interaction.save! if interaction.changed?
         end

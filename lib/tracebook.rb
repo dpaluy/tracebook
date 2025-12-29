@@ -37,7 +37,7 @@ require "tracebook/adapters"
 #     response_payload: response,
 #     input_tokens: 100,
 #     output_tokens: 50,
-#     user: current_user,
+#     trackable: current_user,
 #     tags: ["production", "support"]
 #   )
 #
@@ -131,7 +131,7 @@ module Tracebook
     #     output_tokens: 5,
     #     latency_ms: 150,
     #     status: :success,
-    #     user: current_user,
+    #     trackable: current_user,
     #     tags: ["greeting"]
     #   )
     #
@@ -191,7 +191,7 @@ module Tracebook
         error_message: attributes[:error_message],
         tags: Array(attributes[:tags]).compact,
         metadata: attributes[:metadata] || {},
-        user: attributes[:user],
+        trackable: attributes[:trackable],
         parent_id: attributes[:parent_id],
         session_id: attributes[:session_id]
       )
