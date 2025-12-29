@@ -332,11 +332,6 @@ input[type="submit"]:focus {
   cursor: pointer;
 }
 
-.tb-selected {
-  outline: 2px solid var(--tb-accent);
-  outline-offset: -2px;
-}
-
 /* Status badges */
 .tb-status {
   display: inline-flex;
@@ -381,17 +376,6 @@ input[type="submit"]:focus {
   right: 0;
   height: 3rem;
   background: linear-gradient(transparent, var(--tb-surface));
-}
-
-.tb-alert {
-  background: var(--tb-warning-bg);
-  border: 1px solid #d4a72c;
-  color: var(--tb-warning);
-  padding: 0.75rem 1rem;
-  border-radius: var(--tb-radius-sm);
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
 }
 
 .tb-section {
