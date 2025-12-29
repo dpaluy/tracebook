@@ -40,5 +40,9 @@ module Tracebook
       end
       content_tag(:span, status, class: css_class)
     end
+
+    def cents_to_human(cents)
+      number_to_currency(cents.to_i / 100.0)
+    end
   end
 end

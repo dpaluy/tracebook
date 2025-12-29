@@ -15,8 +15,8 @@
         <strong><%= @kpis[:input_tokens] + @kpis[:output_tokens] %></strong>
       </div>
       <div class="tb-kpi">
-        <span>Cost (¢)</span>
-        <strong><%= @kpis[:cost_cents] %></strong>
+        <span>Cost</span>
+        <strong><%= cents_to_human(@kpis[:cost_cents]) %></strong>
       </div>
     </div>
   </header>
@@ -84,7 +84,7 @@
               <th>Model</th>
               <th>Status</th>
               <th>Tokens</th>
-              <th>Cost (¢)</th>
+              <th>Cost</th>
             </tr>
           </thead>
           <tbody>
@@ -96,7 +96,7 @@
                 <td><%= interaction.model %></td>
                 <td><%= status_badge(interaction.status) %></td>
                 <td><%= interaction.total_tokens %></td>
-                <td><%= interaction.cost_total_cents %></td>
+                <td><%= cents_to_human(interaction.cost_total_cents) %></td>
               </tr>
             <% end %>
           </tbody>
