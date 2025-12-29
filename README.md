@@ -261,7 +261,10 @@ class OpenAIService
           user: current_user,
           session_id: session.id,
           latency_ms: elapsed_ms,
-          status: :success
+          status: :success,
+          # Token counts can be passed explicitly or extracted from response
+          input_tokens: response.dig("usage", "prompt_tokens"),
+          output_tokens: response.dig("usage", "completion_tokens")
         }
       })
 
@@ -297,6 +300,14 @@ end
 ```
 
 **Supported providers:** OpenAI, Anthropic, Ollama (built-in mappers). Other providers use the fallback mapper.
+
+**Token extraction:**
+
+Mappers extract token counts from two sources (in priority order):
+1. **Explicit `meta` values**: Pass `input_tokens` and `output_tokens` in the `meta` hash
+2. **Response payload**: If not in meta, mappers extract from provider-specific response fields (e.g., `usage.prompt_tokens` for OpenAI, `usage.input_tokens` for Anthropic)
+
+If your LLM client strips the `usage` object from responses, pass tokens explicitly via `meta`.
 
 **Custom event name:**
 
@@ -512,29 +523,30 @@ TraceBook automatically calculates costs based on `PricingRule` records. Create 
 # db/seeds.rb or a migration
 
 # OpenAI pricing (as of 2024)
+# Costs are in cents per 1000 tokens
 TraceBook::PricingRule.create!(
   provider: "openai",
-  model_pattern: "gpt-4o",
-  input_per_1k: 2.50,
-  output_per_1k: 10.00,
+  model_glob: "gpt-4o",
+  input_cents_per_unit: 250,   # $2.50 per 1k tokens = 250 cents
+  output_cents_per_unit: 1000, # $10.00 per 1k tokens = 1000 cents
   currency: "USD",
   effective_from: Date.new(2024, 8, 6)
 )
 
 TraceBook::PricingRule.create!(
   provider: "openai",
-  model_pattern: "gpt-4o-mini",
-  input_per_1k: 0.150,
-  output_per_1k: 0.600,
+  model_glob: "gpt-4o-mini*",
+  input_cents_per_unit: 15,    # $0.15 per 1k tokens
+  output_cents_per_unit: 60,   # $0.60 per 1k tokens
   currency: "USD",
   effective_from: Date.new(2024, 7, 18)
 )
 
 TraceBook::PricingRule.create!(
   provider: "openai",
-  model_pattern: "o1",
-  input_per_1k: 15.00,
-  output_per_1k: 60.00,
+  model_glob: "o1*",
+  input_cents_per_unit: 1500,  # $15.00 per 1k tokens
+  output_cents_per_unit: 6000, # $60.00 per 1k tokens
   currency: "USD",
   effective_from: Date.new(2024, 12, 17)
 )
@@ -542,18 +554,18 @@ TraceBook::PricingRule.create!(
 # Anthropic pricing
 TraceBook::PricingRule.create!(
   provider: "anthropic",
-  model_pattern: "claude-3-5-sonnet-*",
-  input_per_1k: 3.00,
-  output_per_1k: 15.00,
+  model_glob: "claude-3-5-sonnet-*",
+  input_cents_per_unit: 300,   # $3.00 per 1k tokens
+  output_cents_per_unit: 1500, # $15.00 per 1k tokens
   currency: "USD",
   effective_from: Date.new(2024, 10, 22)
 )
 
 TraceBook::PricingRule.create!(
   provider: "anthropic",
-  model_pattern: "claude-3-5-haiku-*",
-  input_per_1k: 1.00,
-  output_per_1k: 5.00,
+  model_glob: "claude-3-5-haiku-*",
+  input_cents_per_unit: 100,   # $1.00 per 1k tokens
+  output_cents_per_unit: 500,  # $5.00 per 1k tokens
   currency: "USD",
   effective_from: Date.new(2024, 11, 1)
 )
@@ -561,9 +573,9 @@ TraceBook::PricingRule.create!(
 # Ollama (free/local)
 TraceBook::PricingRule.create!(
   provider: "ollama",
-  model_pattern: "*",
-  input_per_1k: 0.0,
-  output_per_1k: 0.0,
+  model_glob: "*",
+  input_cents_per_unit: 0,
+  output_cents_per_unit: 0,
   currency: "USD",
   effective_from: Date.new(2024, 1, 1)
 )

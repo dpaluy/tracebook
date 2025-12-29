@@ -19,8 +19,8 @@ module Tracebook
           response_payload: raw_response,
           request_text: join_messages(request[:messages]),
           response_text: first_choice_text(response),
-          input_tokens: usage_tokens(response, :prompt_tokens),
-          output_tokens: usage_tokens(response, :completion_tokens),
+          input_tokens: token_count(meta_info, :input_tokens, response, :prompt_tokens),
+          output_tokens: token_count(meta_info, :output_tokens, response, :completion_tokens),
           latency_ms: meta_info[:latency_ms],
           status: meta_info[:status]&.to_sym || default_status(response),
           error_class: nil,
@@ -47,11 +47,6 @@ module Tracebook
         choice = first_choice(response)
         message = choice[:message] || {}
         message.with_indifferent_access[:content].to_s
-      end
-
-      def usage_tokens(response, key)
-        usage = response[:usage] || {}
-        usage.with_indifferent_access[key]&.to_i
       end
 
       def build_metadata(response)

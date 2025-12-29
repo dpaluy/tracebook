@@ -31,6 +31,16 @@ module Tracebook
           memo[key] = value
         end
       end
+
+      # Extract token count from meta (explicit) or response (extracted)
+      def token_count(meta, meta_key, response, response_key)
+        meta[meta_key]&.to_i || extract_usage_token(response, response_key)
+      end
+
+      def extract_usage_token(response, key)
+        usage = response[:usage] || {}
+        usage.with_indifferent_access[key]&.to_i
+      end
     end
   end
 end

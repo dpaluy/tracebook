@@ -18,8 +18,8 @@ module Tracebook
           response_payload: raw_response,
           request_text: extract_blocks(request[:messages]),
           response_text: extract_blocks(response[:content]),
-          input_tokens: anthropic_usage(response, :input_tokens),
-          output_tokens: anthropic_usage(response, :output_tokens),
+          input_tokens: token_count(meta_info, :input_tokens, response, :input_tokens),
+          output_tokens: token_count(meta_info, :output_tokens, response, :output_tokens),
           latency_ms: meta_info[:latency_ms],
           status: meta_info[:status]&.to_sym || :success,
           error_class: nil,
@@ -48,10 +48,6 @@ module Tracebook
         end.compact.join("\n\n")
       end
 
-      def anthropic_usage(response, key)
-        usage = response[:usage] || {}
-        usage.with_indifferent_access[key]&.to_i
-      end
     end
   end
 end
