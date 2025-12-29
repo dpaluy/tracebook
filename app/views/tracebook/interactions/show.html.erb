@@ -8,28 +8,45 @@
     <div class="tb-meta-grid">
       <div><span>Provider</span><strong><%= @interaction.provider %></strong></div>
       <div><span>Model</span><strong><%= @interaction.model %></strong></div>
+      <div><span>Context</span><strong><%= trackable_link(@interaction) %></strong></div>
       <div><span>Status</span><strong><%= status_badge(@interaction.status) %></strong></div>
-      <div><span>Review</span><strong><%= @interaction.review_state %></strong></div>
-      <div><span>Tokens</span><strong><%= @interaction.total_tokens %></strong></div>
+      <div><span>Review</span><strong><%= review_badge(@interaction.review_state) %></strong></div>
+      <div><span>Latency</span><strong><%= latency_display(@interaction.latency_ms) %></strong></div>
+      <div><span>Tokens (in/out)</span><strong><%= token_breakdown(@interaction) %></strong></div>
       <div><span>Cost</span><strong><%= cents_to_human(@interaction.cost_total_cents) %></strong></div>
     </div>
   </header>
 
   <% request_payload = payload_for(@interaction, :request) %>
   <section class="tb-section" data-controller="json-viewer" data-json-viewer-collapsed-value="true">
-    <h2>Request</h2>
-    <pre data-json-viewer-target="content"><%= formatted_payload(request_payload, @interaction.request_text) %></pre>
+    <h2 class="tb-section-header" data-action="click->json-viewer#toggle">
+      <span class="tb-toggle-icon" data-json-viewer-target="icon">▶</span>
+      Request
+    </h2>
+    <div class="tb-section-content" data-json-viewer-target="content">
+      <pre><%= formatted_payload(request_payload, @interaction.request_text) %></pre>
+    </div>
   </section>
 
   <% response_payload = payload_for(@interaction, :response) %>
-  <section class="tb-section" data-controller="json-viewer">
-    <h2>Response</h2>
-    <pre data-json-viewer-target="content"><%= formatted_payload(response_payload, @interaction.response_text) %></pre>
+  <section class="tb-section" data-controller="json-viewer" data-json-viewer-collapsed-value="false">
+    <h2 class="tb-section-header" data-action="click->json-viewer#toggle">
+      <span class="tb-toggle-icon" data-json-viewer-target="icon">▼</span>
+      Response
+    </h2>
+    <div class="tb-section-content" data-json-viewer-target="content">
+      <pre><%= formatted_payload(response_payload, @interaction.response_text) %></pre>
+    </div>
   </section>
 
-  <section class="tb-section">
-    <h2>Metadata</h2>
-    <pre><%= formatted_payload(@interaction.metadata, "{}") %></pre>
+  <section class="tb-section" data-controller="json-viewer" data-json-viewer-collapsed-value="true">
+    <h2 class="tb-section-header" data-action="click->json-viewer#toggle">
+      <span class="tb-toggle-icon" data-json-viewer-target="icon">▶</span>
+      Metadata
+    </h2>
+    <div class="tb-section-content" data-json-viewer-target="content">
+      <pre><%= formatted_payload(@interaction.metadata, "{}") %></pre>
+    </div>
   </section>
 
   <section class="tb-section">

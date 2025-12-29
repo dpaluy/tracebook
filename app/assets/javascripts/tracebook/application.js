@@ -45,11 +45,39 @@
 
     class JsonViewerController extends window.Stimulus.Controller {
       static get targets() {
-        return ["content"];
+        return ["content", "icon"];
+      }
+
+      static get values() {
+        return { collapsed: Boolean };
+      }
+
+      connect() {
+        if (this.collapsedValue) {
+          this.collapse();
+        }
       }
 
       toggle() {
-        this.element.classList.toggle("tb-collapsed");
+        if (this.contentTarget.classList.contains("tb-collapsed")) {
+          this.expand();
+        } else {
+          this.collapse();
+        }
+      }
+
+      collapse() {
+        this.contentTarget.classList.add("tb-collapsed");
+        if (this.hasIconTarget) {
+          this.iconTarget.textContent = "▶";
+        }
+      }
+
+      expand() {
+        this.contentTarget.classList.remove("tb-collapsed");
+        if (this.hasIconTarget) {
+          this.iconTarget.textContent = "▼";
+        }
       }
     }
 

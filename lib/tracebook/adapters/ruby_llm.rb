@@ -24,7 +24,7 @@ module Tracebook
     #     response: response,
     #     meta: {
     #       project: "support",
-    #       user: current_user,
+    #       trackable: current_user,
     #       session_id: session.id,
     #       latency_ms: 150,
     #       status: :success,

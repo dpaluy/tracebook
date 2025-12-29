@@ -20,7 +20,7 @@ module TraceBook
             error_message: "Request timed out",
             tags: [ "custom" ],
             metadata: { "session_path" => "/foo/bar" },
-            user: "user-123",
+            trackable: "user-123",
             parent_id: 99,
             session_id: "sess-abc"
           }
@@ -39,7 +39,7 @@ module TraceBook
         assert_equal "Request timed out", normalized.error_message
         assert_equal [ "custom" ], normalized.tags
         assert_equal({ "session_path" => "/foo/bar" }, normalized.metadata)
-        assert_equal "user-123", normalized.user
+        assert_equal "user-123", normalized.trackable
         assert_equal 99, normalized.parent_id
         assert_equal "sess-abc", normalized.session_id
       end

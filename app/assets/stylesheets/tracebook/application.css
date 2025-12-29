@@ -258,6 +258,10 @@ input[type="submit"]:focus {
   text-decoration: underline;
 }
 
+.tb-muted {
+  color: var(--tb-muted);
+}
+
 .tb-table-wrapper {
   border: 1px solid var(--tb-border);
   border-radius: var(--tb-radius);
@@ -363,19 +367,7 @@ input[type="submit"]:focus {
 }
 
 .tb-collapsed {
-  max-height: 200px;
-  overflow: hidden;
-  position: relative;
-}
-
-.tb-collapsed::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3rem;
-  background: linear-gradient(transparent, var(--tb-surface));
+  display: none;
 }
 
 .tb-section {
@@ -384,6 +376,40 @@ input[type="submit"]:focus {
   background: var(--tb-surface);
   box-shadow: var(--tb-shadow-sm);
   padding: 1.25rem;
+}
+
+.tb-section-header {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--tb-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+  padding: 0.5rem 0;
+  transition: color 0.15s ease;
+}
+
+.tb-section-header:hover {
+  color: var(--tb-accent);
+}
+
+.tb-toggle-icon {
+  font-size: 0.75rem;
+  color: var(--tb-muted);
+  transition: color 0.15s ease;
+  width: 1rem;
+  text-align: center;
+}
+
+.tb-section-header:hover .tb-toggle-icon {
+  color: var(--tb-accent);
+}
+
+.tb-section-content {
+  margin-top: 1rem;
 }
 
 .tb-section h2 {

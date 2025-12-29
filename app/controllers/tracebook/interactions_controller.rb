@@ -15,6 +15,7 @@ module Tracebook
       @providers = Interaction.distinct.order(:provider).pluck(:provider)
       @models = Interaction.distinct.order(:model).pluck(:model)
       @projects = Interaction.distinct.order(:project).pluck(:project).compact
+      @trackable_types = Interaction.where.not(trackable_type: nil).distinct.order(:trackable_type).pluck(:trackable_type)
     end
 
     def show
@@ -53,7 +54,7 @@ module Tracebook
     end
 
     def filter_params
-      params.fetch(:filters, {}).permit(:provider, :model, :project, :status, :review_state, :tag, :from, :to)
+      params.fetch(:filters, {}).permit(:provider, :model, :project, :status, :review_state, :tag, :from, :to, :trackable_type, :trackable_id)
     end
 
     def kpis_for(scope)
@@ -62,7 +63,8 @@ module Tracebook
         success: scope.status_success.count,
         cost_cents: scope.sum(:cost_total_cents),
         input_tokens: scope.sum(:input_tokens),
-        output_tokens: scope.sum(:output_tokens)
+        output_tokens: scope.sum(:output_tokens),
+        unique_contexts: scope.where.not(trackable_id: nil).select(:trackable_type, :trackable_id).distinct.count
       }
     end
   end

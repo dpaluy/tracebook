@@ -68,9 +68,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
     t.integer "status", default: 0, null: false
     t.text "tags"
     t.integer "total_tokens"
+    t.bigint "trackable_id"
+    t.string "trackable_type"
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
-    t.string "user_type"
     t.index ["created_at"], name: "index_tracebook_interactions_on_created_at"
     t.index ["parent_id"], name: "index_tracebook_interactions_on_parent_id"
     t.index ["project", "created_at"], name: "index_tracebook_interactions_on_project_and_created_at"
@@ -78,7 +78,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
     t.index ["review_state"], name: "index_tracebook_interactions_on_review_state"
     t.index ["session_id"], name: "index_tracebook_interactions_on_session_id"
     t.index ["status"], name: "index_tracebook_interactions_on_status"
-    t.index ["user_type", "user_id"], name: "index_tracebook_interactions_on_user_type_and_user_id"
+    t.index ["trackable_type", "trackable_id"], name: "idx_on_trackable_type_trackable_id_f0eb623f85"
   end
 
   create_table "tracebook_pricing_rules", force: :cascade do |t|
