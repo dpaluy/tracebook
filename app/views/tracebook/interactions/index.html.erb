@@ -4,15 +4,19 @@
     <div class="tb-kpis">
       <div class="tb-kpi">
         <span>Total</span>
-        <strong><%= @kpis[:total] %></strong>
+        <strong><%= number_with_delimiter(@kpis[:total]) %></strong>
       </div>
       <div class="tb-kpi">
         <span>Success</span>
-        <strong><%= @kpis[:success] %></strong>
+        <strong><%= number_with_delimiter(@kpis[:success]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Contexts</span>
+        <strong><%= number_with_delimiter(@kpis[:unique_contexts]) %></strong>
       </div>
       <div class="tb-kpi">
         <span>Total Tokens</span>
-        <strong><%= @kpis[:input_tokens] + @kpis[:output_tokens] %></strong>
+        <strong><%= number_with_delimiter(@kpis[:input_tokens] + @kpis[:output_tokens]) %></strong>
       </div>
       <div class="tb-kpi">
         <span>Cost</span>
@@ -50,6 +54,14 @@
         </div>
       </div>
       <div class="tb-filter-row tb-filter-row-secondary">
+        <div class="tb-filter-field">
+          <%= form.label :trackable_type, "Context Type" %>
+          <%= form.select :trackable_type, trackable_type_options(@trackable_types), { include_blank: "All" }, value: @filters[:trackable_type] %>
+        </div>
+        <div class="tb-filter-field">
+          <%= form.label :trackable_id, "Context ID" %>
+          <%= form.text_field :trackable_id, value: @filters[:trackable_id], placeholder: "e.g., 123" %>
+        </div>
         <div class="tb-filter-field tb-filter-date-range">
           <%= form.label :from, "Date range" %>
           <div class="tb-date-inputs">
@@ -80,6 +92,7 @@
             <tr>
               <th><input type="checkbox" data-bulk-select-target="toggleAll" data-action="change->bulk-select#toggleAll"></th>
               <th>Timestamp</th>
+              <th>Context</th>
               <th>Provider</th>
               <th>Model</th>
               <th>Status</th>
@@ -93,11 +106,12 @@
               <tr>
                 <td><%= check_box_tag "interaction_ids[]", interaction.id, false, data: { bulk_select_target: "checkbox", action: "change->bulk-select#checkboxChanged" } %></td>
                 <td><%= link_to interaction.created_at.strftime("%Y-%m-%d %H:%M"), interaction_path(interaction) %></td>
+                <td><%= trackable_link(interaction) %></td>
                 <td><%= interaction.provider %></td>
                 <td><%= interaction.model %></td>
                 <td><%= status_badge(interaction.status) %></td>
                 <td><%= review_badge(interaction.review_state) %></td>
-                <td><%= interaction.total_tokens %></td>
+                <td><%= token_breakdown(interaction) %></td>
                 <td><%= cents_to_human(interaction.cost_total_cents) %></td>
               </tr>
             <% end %>
