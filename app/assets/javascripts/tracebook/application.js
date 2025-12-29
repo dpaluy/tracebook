@@ -16,6 +16,19 @@
     booted = true;
     const application = window.Stimulus.Application.start();
 
+    class BulkSelectController extends window.Stimulus.Controller {
+      static get targets() {
+        return ["toggleAll", "checkbox"];
+      }
+
+      toggleAll() {
+        const checked = this.toggleAllTarget.checked;
+        this.checkboxTargets.forEach((checkbox) => {
+          checkbox.checked = checked;
+        });
+      }
+    }
+
     class JsonViewerController extends window.Stimulus.Controller {
       static get targets() {
         return ["content"];
@@ -26,6 +39,7 @@
       }
     }
 
+    application.register("bulk-select", BulkSelectController);
     application.register("json-viewer", JsonViewerController);
   }
 

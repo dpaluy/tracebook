@@ -67,7 +67,7 @@
   </section>
 
   <section class="tb-table-wrapper">
-    <%= form_with url: bulk_review_interactions_path, method: :post, html: { tabindex: 0 } do %>
+    <%= form_with url: bulk_review_interactions_path, method: :post, data: { controller: "bulk-select" } do %>
       <%= hidden_field_tag :review_state, "approved" %>
       <div class="tb-table-actions">
         <button type="submit">Bulk Approve</button>
@@ -78,7 +78,7 @@
         <table class="tb-table">
           <thead>
             <tr>
-              <th><input type="checkbox"></th>
+              <th><input type="checkbox" data-bulk-select-target="toggleAll" data-action="change->bulk-select#toggleAll"></th>
               <th>Timestamp</th>
               <th>Provider</th>
               <th>Model</th>
@@ -90,8 +90,8 @@
           </thead>
           <tbody>
             <% @interactions.each do |interaction| %>
-              <tr data-controller="row">
-                <td><%= check_box_tag "interaction_ids[]", interaction.id, false %></td>
+              <tr>
+                <td><%= check_box_tag "interaction_ids[]", interaction.id, false, data: { bulk_select_target: "checkbox" } %></td>
                 <td><%= link_to interaction.created_at.strftime("%Y-%m-%d %H:%M"), interaction_path(interaction) %></td>
                 <td><%= interaction.provider %></td>
                 <td><%= interaction.model %></td>
