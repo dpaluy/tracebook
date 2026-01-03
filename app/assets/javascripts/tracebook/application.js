@@ -45,7 +45,7 @@
 
     class JsonViewerController extends window.Stimulus.Controller {
       static get targets() {
-        return ["content", "icon"];
+        return ["content", "icon", "copyBtn", "copyText"];
       }
 
       static get values() {
@@ -55,11 +55,16 @@
       connect() {
         if (this.collapsedValue) {
           this.collapse();
+        } else {
+          this.expand();
         }
       }
 
-      toggle() {
-        if (this.contentTarget.classList.contains("tb-collapsed")) {
+      toggle(event) {
+        // Don't toggle if clicking the copy button
+        if (event.target.closest('.tb-copy-btn')) return;
+
+        if (this.element.classList.contains("tb-collapsed")) {
           this.expand();
         } else {
           this.collapse();
@@ -67,22 +72,64 @@
       }
 
       collapse() {
-        this.contentTarget.classList.add("tb-collapsed");
+        this.element.classList.add("tb-collapsed");
+        this.element.classList.remove("tb-expanded");
+        if (this.hasContentTarget) {
+          this.contentTarget.style.display = "none";
+        }
         if (this.hasIconTarget) {
           this.iconTarget.textContent = "▶";
         }
       }
 
       expand() {
-        this.contentTarget.classList.remove("tb-collapsed");
+        this.element.classList.remove("tb-collapsed");
+        this.element.classList.add("tb-expanded");
+        if (this.hasContentTarget) {
+          this.contentTarget.style.display = "block";
+        }
         if (this.hasIconTarget) {
           this.iconTarget.textContent = "▼";
+        }
+      }
+
+      copy(event) {
+        event.stopPropagation();
+        const btn = event.currentTarget;
+        const payload = btn.dataset.payload;
+
+        navigator.clipboard.writeText(payload).then(() => {
+          if (this.hasCopyTextTarget) {
+            const originalText = this.copyTextTarget.textContent;
+            this.copyTextTarget.textContent = "Copied!";
+            setTimeout(() => { this.copyTextTarget.textContent = originalText; }, 2000);
+          }
+        }).catch(() => {
+          console.error("Failed to copy to clipboard");
+        });
+      }
+    }
+
+    class MessageToggleController extends window.Stimulus.Controller {
+      static get targets() {
+        return ["content", "icon"];
+      }
+
+      toggle() {
+        const isHidden = this.contentTarget.classList.contains("hidden");
+        if (isHidden) {
+          this.contentTarget.classList.remove("hidden");
+          this.iconTarget.textContent = "▼";
+        } else {
+          this.contentTarget.classList.add("hidden");
+          this.iconTarget.textContent = "▶";
         }
       }
     }
 
     application.register("bulk-select", BulkSelectController);
     application.register("json-viewer", JsonViewerController);
+    application.register("message-toggle", MessageToggleController);
   }
 
   if (window.Stimulus) {

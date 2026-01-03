@@ -26,7 +26,7 @@ module Tracebook
           error_message: nil,
           tags: Array(meta_info[:tags]).compact,
           metadata: {},
-          trackable: meta_info[:trackable],
+          actor: meta_info[:actor],
           parent_id: meta_info[:parent_id],
           session_id: meta_info[:session_id]
         )

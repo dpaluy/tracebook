@@ -3,6 +3,9 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in tracebook.gemspec.
 gemspec
 
+# Pin minitest < 6.0 until Rails supports it
+gem "minitest", "~> 5.0"
+
 gem "puma"
 
 gem "sqlite3"

@@ -1,0 +1,69 @@
+<div class="tb-container">
+  <header class="tb-header">
+    <h1>TraceBook</h1>
+    <div class="tb-kpis">
+      <div class="tb-kpi">
+        <span>Actors</span>
+        <strong><%= number_with_delimiter(@kpis[:total_actors]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Sessions</span>
+        <strong><%= number_with_delimiter(@kpis[:total_sessions]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Total Tokens</span>
+        <strong><%= number_with_delimiter(@kpis[:total_tokens]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Total Cost</span>
+        <strong><%= cents_to_human(@kpis[:total_cost_cents]) %></strong>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tb-nav-tabs">
+    <%= link_to "Actors", actors_path, class: "tb-nav-tab tb-nav-tab-active" %>
+    <%= link_to "All Interactions", interactions_path, class: "tb-nav-tab" %>
+  </nav>
+
+  <section class="tb-table-wrapper">
+    <turbo-frame id="actors_table">
+      <table class="tb-table">
+        <thead>
+          <tr>
+            <th>Actor</th>
+            <th>Sessions</th>
+            <th>Tokens</th>
+            <th>Cost</th>
+            <th>Last Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @actors.each do |actor| %>
+            <tr>
+              <td>
+                <%= link_to actor_display_name(actor[:actor_type], actor[:actor_id]),
+                    actor_path(type: type_to_param(actor[:actor_type]), id: actor[:actor_id]) %>
+              </td>
+              <td><%= number_with_delimiter(actor[:sessions_count]) %></td>
+              <td><%= number_with_delimiter(actor[:total_tokens]) %></td>
+              <td><%= cents_to_human(actor[:total_cost_cents]) %></td>
+              <td><%= actor[:last_activity]&.strftime("%Y-%m-%d %H:%M") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <% if @pagination[:total_pages] > 1 %>
+        <nav class="tb-pagination" aria-label="Actors pagination">
+          <% if @pagination[:prev_page] %>
+            <%= link_to "← Previous", actors_path(page: @pagination[:prev_page]), class: "tb-page-link", data: { turbo_frame: "actors_table" } %>
+          <% end %>
+          <span class="tb-page-info">Page <%= @pagination[:current_page] %> of <%= @pagination[:total_pages] %></span>
+          <% if @pagination[:next_page] %>
+            <%= link_to "Next →", actors_path(page: @pagination[:next_page]), class: "tb-page-link", data: { turbo_frame: "actors_table" } %>
+          <% end %>
+        </nav>
+      <% end %>
+    </turbo-frame>
+  </section>
+</div>

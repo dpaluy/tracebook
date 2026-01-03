@@ -19,7 +19,7 @@ module Tracebook
   #     "openai",
   #     raw_request: { model: "gpt-4o", messages: messages },
   #     raw_response: openai_response,
-  #     meta: { project: "chatbot", trackable: current_user, latency_ms: 200 }
+  #     meta: { project: "chatbot", actor: current_user, latency_ms: 200 }
   #   )
   #   TraceBook.record!(**normalized.to_h)
   #
@@ -48,7 +48,7 @@ module Tracebook
     # @param meta [Hash] Additional metadata (project, user, session_id, tags, etc.)
     #
     # @option meta [String] :project Project name for filtering
-    # @option meta [ActiveRecord::Base] :trackable Associated context object
+    # @option meta [ActiveRecord::Base] :actor Associated context object (e.g., User)
     # @option meta [String] :session_id Session identifier
     # @option meta [Integer] :parent_id Parent interaction ID
     # @option meta [Array<String>] :tags Labels for filtering
@@ -70,7 +70,7 @@ module Tracebook
     #       choices: [{ message: { content: "Hi!" } }],
     #       usage: { prompt_tokens: 10, completion_tokens: 5 }
     #     },
-    #     meta: { latency_ms: 150, trackable: current_user }
+    #     meta: { latency_ms: 150, actor: current_user }
     #   )
     def normalize(provider, raw_request:, raw_response:, meta: {})
       case provider.to_s
@@ -109,7 +109,7 @@ module Tracebook
         error_message: nil,
         tags: Array(meta_info[:tags]).compact,
         metadata: metadata,
-        trackable: meta_info[:trackable],
+        actor: meta_info[:actor],
         parent_id: meta_info[:parent_id],
         session_id: meta_info[:session_id]
       )
@@ -136,7 +136,7 @@ module Tracebook
         error_message: nil,
         tags: Array(meta_info[:tags]).compact,
         metadata: {},
-        trackable: meta_info[:trackable],
+        actor: meta_info[:actor],
         parent_id: meta_info[:parent_id],
         session_id: meta_info[:session_id]
       )
@@ -166,7 +166,7 @@ module Tracebook
         error_message: nil,
         tags: Array(meta_info[:tags]).compact,
         metadata: metadata,
-        trackable: meta_info[:trackable],
+        actor: meta_info[:actor],
         parent_id: meta_info[:parent_id],
         session_id: meta_info[:session_id]
       )
@@ -192,8 +192,8 @@ module Tracebook
         error_class: meta_info[:error_class],
         error_message: meta_info[:error_message],
         tags: Array(meta_info[:tags]).compact,
-        metadata: meta_info[:metadata] || {},
-        trackable: meta_info[:trackable],
+        metadata: build_metadata(meta_info),
+        actor: meta_info[:actor],
         parent_id: meta_info[:parent_id],
         session_id: meta_info[:session_id]
       )
@@ -271,7 +271,16 @@ module Tracebook
 
     # Common helpers
     def indifferent_meta(meta)
-      (meta || {}).with_indifferent_access
+      result = (meta || {}).with_indifferent_access
+      # Backwards compatibility: accept both :trackable and :actor
+      result[:actor] ||= result[:trackable]
+      result
+    end
+
+    def build_metadata(meta_info)
+      metadata = (meta_info[:metadata] || {}).dup
+      metadata["context_label"] = meta_info[:context_label] if meta_info[:context_label].present?
+      metadata
     end
 
     def symbolize(hash)

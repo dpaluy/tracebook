@@ -16,11 +16,11 @@ module Tracebook
   #
   # ## Enums
   # - `status`: `:success`, `:error`, `:canceled`
-  # - `review_state`: `:pending`, `:approved`, `:flagged`, `:rejected`
+  # - `review_state`: `:pending`, `:approved`, `:flagged`
   #
   # ## Associations
   # - `parent` - Parent interaction for hierarchical chains
-  # - `trackable` - Polymorphic association to context object (User, Session, Chat, etc.)
+  # - `actor` - Polymorphic association to entity who triggers LLM request (User, VendorUser, etc.)
   # - `request_payload_blob` - ActiveStorage blob for large requests
   # - `response_payload_blob` - ActiveStorage blob for large responses
   #
@@ -45,9 +45,13 @@ module Tracebook
     #   @return [Tracebook::Interaction, nil] Parent interaction for hierarchical chains
     belongs_to :parent, class_name: "Tracebook::Interaction", optional: true
 
-    # @!attribute [rw] trackable
-    #   @return [ActiveRecord::Base, nil] Polymorphic trackable object (User, Session, Chat, etc.)
-    belongs_to :trackable, polymorphic: true, optional: true
+    # @!attribute [rw] comments
+    #   @return [ActiveRecord::Relation<Tracebook::Comment>] Comments on this interaction
+    has_many :comments, -> { chronological }, class_name: "Tracebook::Comment", dependent: :destroy
+
+    # @!attribute [rw] actor
+    #   @return [ActiveRecord::Base, nil] Polymorphic actor (User, VendorUser, etc.)
+    belongs_to :actor, polymorphic: true, optional: true
 
     # @!attribute [rw] request_payload_blob
     #   @return [ActiveStorage::Blob, nil] Blob for large request payloads
@@ -62,8 +66,10 @@ module Tracebook
     enum :status, { success: 0, error: 1, canceled: 2 }, prefix: true
 
     # @!attribute [rw] review_state
-    #   @return [Symbol] Review state (:pending, :approved, :flagged, :rejected)
-    enum :review_state, { pending: 0, approved: 1, flagged: 2, rejected: 3 }, prefix: true
+    #   @return [Symbol] Review state (:pending, :approved, :flagged)
+    enum :review_state, { pending: 0, approved: 1, flagged: 2 }, prefix: true
+
+    before_validation :generate_session_id, on: :create
 
     attribute :tags, :json, default: []
     attribute :metadata, :json, default: {}
@@ -87,9 +93,10 @@ module Tracebook
     scope :tagged_with, ->(tag) {
       where("tags LIKE ?", "%#{sanitize_sql_like(tag)}%") if tag.present?
     }
-    scope :by_trackable_type, ->(type) { where(trackable_type: type) if type.present? }
-    scope :by_trackable_id, ->(id) { where(trackable_id: id) if id.present? }
-    scope :by_trackable, ->(type, id) { by_trackable_type(type).by_trackable_id(id) }
+    scope :by_actor_type, ->(type) { where(actor_type: type) if type.present? }
+    scope :by_actor_id, ->(id) { where(actor_id: id) if id.present? }
+    scope :by_actor, ->(type, id) { by_actor_type(type).by_actor_id(id) }
+    scope :by_session, ->(session_id) { where(session_id: session_id) if session_id.present? }
 
     def self.filtered(params)
       by_provider(params[:provider])
@@ -97,10 +104,22 @@ module Tracebook
         .by_project(params[:project])
         .by_status(params[:status])
         .by_review_state(params[:review_state])
-        .by_trackable_type(params[:trackable_type])
-        .by_trackable_id(params[:trackable_id])
+        .by_actor_type(params[:actor_type])
+        .by_actor_id(params[:actor_id])
+        .by_session(params[:session_id])
         .tagged_with(params[:tag])
         .between_dates(params[:from], params[:to])
+    end
+
+    # Human-readable context label from metadata
+    def context_label
+      metadata&.dig("context_label") || session_id&.truncate(20) || "(no context)"
+    end
+
+    private
+
+    def generate_session_id
+      self.session_id ||= "tb_#{SecureRandom.uuid}"
     end
   end
 end

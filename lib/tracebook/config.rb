@@ -78,6 +78,16 @@ module Tracebook
     #   @return [Integer] Number of interactions per page in dashboard (default: 100)
     attr_accessor :per_page
 
+    # @!attribute [rw] actor_display
+    #   @return [Proc, nil] Lambda to format actor display name
+    #   Receives the actor record and returns a display string.
+    #   When nil, falls back to common methods (:name, :email, :title, :display_name, :username)
+    #   @example
+    #     config.actor_display = ->(actor) { "#{actor.class.name} - #{actor.email}" }
+    #   @example
+    #     config.actor_display = ->(actor) { actor.full_name }
+    attr_accessor :actor_display
+
     # Creates a new configuration with default values.
     #
     # @return [Config]
@@ -92,6 +102,7 @@ module Tracebook
       @auto_subscribe_ruby_llm = false
       @auto_subscribe_active_agent = false
       @per_page = 100
+      @actor_display = nil
     end
 
     # Returns true if configuration has been finalized.
