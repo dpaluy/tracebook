@@ -31,56 +31,67 @@
   </nav>
 
   <section class="tb-filters">
-    <%= form_with url: interactions_path, method: :get, scope: :filters, data: { turbo_frame: "interactions_table" }, class: "tb-filter-form" do |form| %>
-      <div class="tb-filter-row">
-        <div class="tb-filter-field">
-          <%= form.label :provider %>
-          <%= form.select :provider, options_for_select(@providers, @filters[:provider]), include_blank: "All" %>
-        </div>
-        <div class="tb-filter-field">
-          <%= form.label :model %>
-          <%= form.select :model, options_for_select(@models, @filters[:model]), include_blank: "All" %>
-        </div>
-        <div class="tb-filter-field">
-          <%= form.label :project %>
-          <%= form.select :project, options_for_select(@projects, @filters[:project]), include_blank: "All" %>
-        </div>
-        <div class="tb-filter-field">
-          <%= form.label :status %>
-          <%= form.select :status, options_for_select(TraceBook::Interaction.statuses.keys, @filters[:status]), include_blank: "All" %>
-        </div>
-        <div class="tb-filter-field">
-          <%= form.label :review_state, "Review" %>
-          <%= form.select :review_state, options_for_select(TraceBook::Interaction.review_states.keys, @filters[:review_state]), include_blank: "All" %>
-        </div>
-        <div class="tb-filter-field">
-          <%= form.label :tag %>
-          <%= form.text_field :tag, value: @filters[:tag], placeholder: "Filter by tag" %>
-        </div>
-      </div>
-      <div class="tb-filter-row tb-filter-row-secondary">
-        <div class="tb-filter-field">
-          <%= form.label :actor_type, "Actor Type" %>
-          <%= form.select :actor_type, actor_type_options(@actor_types), { include_blank: "All" }, value: @filters[:actor_type] %>
-        </div>
-        <div class="tb-filter-field">
-          <%= form.label :actor_id, "Actor ID" %>
-          <%= form.text_field :actor_id, value: @filters[:actor_id], placeholder: "e.g., 123" %>
-        </div>
-        <div class="tb-filter-field tb-filter-date-range">
-          <%= form.label :from, "Date range" %>
-          <div class="tb-date-inputs">
-            <%= form.date_field :from, value: @filters[:from] %>
-            <span class="tb-date-separator">to</span>
-            <%= form.date_field :to, value: @filters[:to] %>
+    <details class="tb-filter-details" open>
+      <summary class="tb-filter-summary">
+        <span class="tb-filter-summary-text">Filters</span>
+        <% filter_count = @filters.values.count(&:present?) %>
+        <% if filter_count > 0 %>
+          <span class="tb-filter-count"><%= filter_count %></span>
+        <% end %>
+        <span class="tb-filter-chevron">▼</span>
+      </summary>
+
+      <%= form_with url: interactions_path, method: :get, scope: :filters, data: { turbo_frame: "interactions_table" }, class: "tb-filter-form" do |form| %>
+        <div class="tb-filter-row">
+          <div class="tb-filter-field">
+            <%= form.label :provider %>
+            <%= form.select :provider, options_for_select(@providers, @filters[:provider]), include_blank: "All" %>
+          </div>
+          <div class="tb-filter-field">
+            <%= form.label :model %>
+            <%= form.select :model, options_for_select(@models, @filters[:model]), include_blank: "All" %>
+          </div>
+          <div class="tb-filter-field">
+            <%= form.label :project %>
+            <%= form.select :project, options_for_select(@projects, @filters[:project]), include_blank: "All" %>
+          </div>
+          <div class="tb-filter-field">
+            <%= form.label :status %>
+            <%= form.select :status, options_for_select(TraceBook::Interaction.statuses.keys, @filters[:status]), include_blank: "All" %>
+          </div>
+          <div class="tb-filter-field">
+            <%= form.label :review_state, "Review" %>
+            <%= form.select :review_state, options_for_select(TraceBook::Interaction.review_states.keys, @filters[:review_state]), include_blank: "All" %>
+          </div>
+          <div class="tb-filter-field">
+            <%= form.label :tag %>
+            <%= form.text_field :tag, value: @filters[:tag], placeholder: "Filter by tag" %>
           </div>
         </div>
-        <div class="tb-filter-actions">
-          <%= form.submit "Apply Filters" %>
-          <%= link_to "Reset", interactions_path, class: "tb-link" %>
+        <div class="tb-filter-row tb-filter-row-secondary">
+          <div class="tb-filter-field">
+            <%= form.label :actor_type, "Actor Type" %>
+            <%= form.select :actor_type, actor_type_options(@actor_types), { include_blank: "All" }, value: @filters[:actor_type] %>
+          </div>
+          <div class="tb-filter-field">
+            <%= form.label :actor_id, "Actor ID" %>
+            <%= form.text_field :actor_id, value: @filters[:actor_id], placeholder: "e.g., 123" %>
+          </div>
+          <div class="tb-filter-field tb-filter-date-range">
+            <%= form.label :from, "Date range" %>
+            <div class="tb-date-inputs">
+              <%= form.date_field :from, value: @filters[:from] %>
+              <span class="tb-date-separator">to</span>
+              <%= form.date_field :to, value: @filters[:to] %>
+            </div>
+          </div>
+          <div class="tb-filter-actions">
+            <%= form.submit "Apply Filters" %>
+            <%= link_to "Reset", interactions_path, class: "tb-link" %>
+          </div>
         </div>
-      </div>
-    <% end %>
+      <% end %>
+    </details>
   </section>
 
   <section class="tb-table-wrapper">
@@ -109,15 +120,15 @@
           <tbody>
             <% @interactions.each do |interaction| %>
               <tr>
-                <td><%= check_box_tag "interaction_ids[]", interaction.id, false, data: { bulk_select_target: "checkbox", action: "change->bulk-select#checkboxChanged" } %></td>
-                <td><%= link_to interaction.created_at.strftime("%Y-%m-%d %H:%M"), interaction_path(interaction) %></td>
-                <td><%= actor_link(interaction) %></td>
-                <td><%= interaction.provider %></td>
-                <td><%= interaction.model %></td>
-                <td><%= status_badge(interaction.status) %></td>
-                <td><%= review_badge(interaction.review_state) %></td>
-                <td><%= token_breakdown(interaction) %></td>
-                <td><%= cents_to_human(interaction.cost_total_cents) %></td>
+                <td data-label="Select"><%= check_box_tag "interaction_ids[]", interaction.id, false, data: { bulk_select_target: "checkbox", action: "change->bulk-select#checkboxChanged" } %></td>
+                <td data-label="Timestamp"><%= link_to interaction.created_at.strftime("%Y-%m-%d %H:%M"), interaction_path(interaction) %></td>
+                <td data-label="Actor"><%= actor_link(interaction) %></td>
+                <td data-label="Provider"><%= interaction.provider %></td>
+                <td data-label="Model"><%= interaction.model %></td>
+                <td data-label="Status"><%= status_badge(interaction.status) %></td>
+                <td data-label="Review"><%= review_badge(interaction.review_state) %></td>
+                <td data-label="Tokens"><%= token_breakdown(interaction) %></td>
+                <td data-label="Cost"><%= cents_to_human(interaction.cost_total_cents) %></td>
               </tr>
             <% end %>
           </tbody>

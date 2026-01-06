@@ -41,14 +41,14 @@
         <tbody>
           <% @actors.each do |actor| %>
             <tr>
-              <td>
+              <td data-label="Actor">
                 <%= link_to actor_display_name(actor[:actor_type], actor[:actor_id]),
                     actor_path(type: type_to_param(actor[:actor_type]), id: actor[:actor_id]) %>
               </td>
-              <td><%= number_with_delimiter(actor[:sessions_count]) %></td>
-              <td><%= number_with_delimiter(actor[:total_tokens]) %></td>
-              <td><%= cents_to_human(actor[:total_cost_cents]) %></td>
-              <td><%= actor[:last_activity]&.strftime("%Y-%m-%d %H:%M") %></td>
+              <td data-label="Sessions"><%= number_with_delimiter(actor[:sessions_count]) %></td>
+              <td data-label="Tokens"><%= number_with_delimiter(actor[:total_tokens]) %></td>
+              <td data-label="Cost"><%= cents_to_human(actor[:total_cost_cents]) %></td>
+              <td data-label="Last Activity"><%= actor[:last_activity]&.strftime("%Y-%m-%d %H:%M") %></td>
             </tr>
           <% end %>
         </tbody>

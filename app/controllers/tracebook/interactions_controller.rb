@@ -85,7 +85,6 @@ module Tracebook
         unique_actors: scope.where.not(actor_id: nil).select(:actor_type, :actor_id).distinct.count
       }
     end
-
   end
 end
 

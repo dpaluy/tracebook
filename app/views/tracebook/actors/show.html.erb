@@ -47,17 +47,17 @@
         <tbody>
           <% @sessions.each do |session| %>
             <tr>
-              <td>
+              <td data-label="Context">
                 <%= link_to actor_session_path(type: type_to_param(@actor_type), id: @actor_id, session_id: session.session_id) do %>
                   <%= session.context_label %>
                 <% end %>
               </td>
-              <td><%= session.model %></td>
-              <td><%= session.interactions_count %></td>
-              <td><%= number_with_delimiter(session.total_tokens) %></td>
-              <td><%= session.formatted_cost %></td>
-              <td><%= session_review_badge(session) %></td>
-              <td><%= session.last_activity&.strftime("%Y-%m-%d %H:%M") %></td>
+              <td data-label="Model"><%= session.model %></td>
+              <td data-label="Interactions"><%= session.interactions_count %></td>
+              <td data-label="Tokens"><%= number_with_delimiter(session.total_tokens) %></td>
+              <td data-label="Cost"><%= session.formatted_cost %></td>
+              <td data-label="Review"><%= session_review_badge(session) %></td>
+              <td data-label="Last Activity"><%= session.last_activity&.strftime("%Y-%m-%d %H:%M") %></td>
             </tr>
           <% end %>
         </tbody>

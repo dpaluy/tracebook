@@ -9,7 +9,7 @@ Tracebook::Engine.routes.draw do
   resources :interactions, only: [ :index, :show ] do
     post :review, on: :member
     post :bulk_review, on: :collection
-    resources :comments, only: [:create]
+    resources :comments, only: [ :create ]
   end
 
   resources :exports, only: [ :create, :show ]

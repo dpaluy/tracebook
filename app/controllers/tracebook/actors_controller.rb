@@ -34,7 +34,7 @@ module Tracebook
       page = (params[:page] || 1).to_i
       total = array.size
       total_pages = (total.to_f / PER_PAGE).ceil
-      page = [[page, 1].max, [total_pages, 1].max].min
+      page = [ [ page, 1 ].max, [ total_pages, 1 ].max ].min
 
       offset = (page - 1) * PER_PAGE
       items = array[offset, PER_PAGE] || []
