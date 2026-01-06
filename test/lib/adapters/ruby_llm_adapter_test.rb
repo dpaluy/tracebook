@@ -38,8 +38,8 @@ module TraceBook
         ActiveSupport::Notifications.instrument("ruby_llm.request", {
           provider: "gemini",
           request: { "model" => "gemini-2.0-flash", "messages" => [ { "content" => "Hi" } ] },
-          response: { 
-            "content" => "Hello", 
+          response: {
+            "content" => "Hello",
             "usageMetadata" => { "promptTokenCount" => 50, "candidatesTokenCount" => 25 }
           },
           meta: { project: "demo" }
@@ -59,8 +59,8 @@ module TraceBook
         ActiveSupport::Notifications.instrument("ruby_llm.request", {
           provider: "gemini",
           request: { "model" => "gemini-2.0-flash", "messages" => [ { "content" => "Hi" } ] },
-          response: { 
-            "content" => "Hello", 
+          response: {
+            "content" => "Hello",
             "usageMetadata" => { "promptTokenCount" => 50, "candidatesTokenCount" => 25 }
           },
           meta: { project: "demo", input_tokens: 100, output_tokens: 40 }
@@ -69,6 +69,29 @@ module TraceBook
         interaction = Interaction.last
         assert_equal 100, interaction.input_tokens, "Should prioritize meta tokens"
         assert_equal 40, interaction.output_tokens
+      end
+
+      test "captures token counts from RubyLLM Message#to_h format (top-level tokens)" do
+        RubyLLM.enable!
+
+        # RubyLLM normalizes Gemini response and puts tokens at top level
+        ActiveSupport::Notifications.instrument("ruby_llm.request", {
+          provider: "gemini",
+          request: { "model" => "gemini-2.0-flash", "messages" => [ { "content" => "Hi" } ] },
+          response: {
+            "role" => "assistant",
+            "content" => "Hello!",
+            "model_id" => "gemini-2.0-flash",
+            "input_tokens" => 50,
+            "output_tokens" => 25
+          },
+          meta: { project: "demo" }
+        })
+
+        interaction = Interaction.last
+        assert_equal 50, interaction.input_tokens
+        assert_equal 25, interaction.output_tokens
+        assert_equal 75, interaction.total_tokens
       end
     end
   end
