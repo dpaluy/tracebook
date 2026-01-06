@@ -70,16 +70,13 @@ module Tracebook
         end
       end
 
-      # Extract token count from meta (explicit, highest priority), response top-level
-      # (RubyLLM format), or Gemini response usageMetadata (raw API format)
+      # Extract token count from meta (explicit, highest priority) or Gemini response
+      # Gemini uses camelCase: promptTokenCount, candidatesTokenCount
       def gemini_token_count(meta_info, response, meta_key, gemini_response_key)
         # First check if explicitly passed in meta (highest priority)
         return meta_info[meta_key]&.to_i if meta_info[meta_key].present?
 
-        # Check top-level response (RubyLLM Message#to_h format)
-        return response[meta_key]&.to_i if response[meta_key].present?
-
-        # Extract from usageMetadata (raw Gemini API response format)
+        # Then try to extract from response usageMetadata
         usage = response[:usage_metadata] || response[:usageMetadata] || {}
         usage = usage.with_indifferent_access
 

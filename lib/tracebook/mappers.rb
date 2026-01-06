@@ -40,10 +40,10 @@ module Tracebook
 
     # Normalizes a provider's request/response into standard format.
     #
-    # Routes to provider-specific mappers for OpenAI, Anthropic, and Ollama.
-    # Falls back to a generic mapper for unknown providers.
+    # Auto-detects RubyLLM normalized format (top-level input_tokens/output_tokens)
+    # and routes accordingly. For raw API responses, routes to provider-specific mappers.
     #
-    # @param provider [String] Provider name ("openai", "anthropic", "ollama", etc.)
+    # @param provider [String] Provider name ("openai", "anthropic", "gemini", etc.)
     # @param raw_request [Hash] The original request sent to the provider
     # @param raw_response [Hash] The original response from the provider
     # @param meta [Hash] Additional metadata (project, user, session_id, tags, etc.)
@@ -74,6 +74,11 @@ module Tracebook
     #     meta: { latency_ms: 150, actor: current_user }
     #   )
     def normalize(provider, raw_request:, raw_response:, meta: {})
+      # Auto-detect RubyLLM normalized format (has top-level token counts)
+      if ruby_llm_format?(raw_response)
+        return normalize_ruby_llm(provider, raw_request, raw_response, meta)
+      end
+
       case provider.to_s
       when "openai"
         normalize_openai(raw_request, raw_response, meta)
@@ -90,6 +95,44 @@ module Tracebook
 
 
     private
+
+    # Detect RubyLLM normalized format by checking for top-level token fields
+    # RubyLLM Message#to_h puts input_tokens/output_tokens at the root level
+    def ruby_llm_format?(raw_response)
+      return false unless raw_response.is_a?(Hash)
+
+      response = raw_response.with_indifferent_access
+      response.key?(:input_tokens) || response.key?(:output_tokens)
+    end
+
+    # Normalize RubyLLM's already-normalized response format
+    # RubyLLM abstracts all providers into a consistent Message structure
+    def normalize_ruby_llm(provider, raw_request, raw_response, meta)
+      request = symbolize(raw_request || {})
+      response = symbolize(raw_response || {})
+      meta_info = indifferent_meta(meta)
+
+      Tracebook::NormalizedInteraction.new(
+        provider: provider.to_s,
+        model: response[:model_id] || response[:model] || request[:model],
+        project: meta_info[:project],
+        request_payload: raw_request,
+        response_payload: raw_response,
+        request_text: join_messages(request[:messages]),
+        response_text: response[:content].to_s,
+        input_tokens: meta_info[:input_tokens]&.to_i || response[:input_tokens]&.to_i,
+        output_tokens: meta_info[:output_tokens]&.to_i || response[:output_tokens]&.to_i,
+        latency_ms: meta_info[:latency_ms],
+        status: meta_info[:status]&.to_sym || :success,
+        error_class: nil,
+        error_message: nil,
+        tags: Array(meta_info[:tags]).compact,
+        metadata: {},
+        actor: meta_info[:actor],
+        parent_id: meta_info[:parent_id],
+        session_id: meta_info[:session_id]
+      )
+    end
 
     def normalize_openai(raw_request, raw_response, meta)
       request = symbolize(raw_request || {})

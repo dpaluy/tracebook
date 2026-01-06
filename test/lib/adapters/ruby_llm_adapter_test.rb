@@ -71,7 +71,7 @@ module TraceBook
         assert_equal 40, interaction.output_tokens
       end
 
-      test "captures token counts from RubyLLM Message#to_h format (top-level tokens)" do
+      test "captures token counts from RubyLLM Message#to_h format (top-level tokens) for Gemini" do
         RubyLLM.enable!
 
         # RubyLLM normalizes Gemini response and puts tokens at top level
@@ -89,9 +89,76 @@ module TraceBook
         })
 
         interaction = Interaction.last
+        assert_equal "gemini", interaction.provider
         assert_equal 50, interaction.input_tokens
         assert_equal 25, interaction.output_tokens
         assert_equal 75, interaction.total_tokens
+      end
+
+      test "captures token counts from RubyLLM format for OpenAI provider" do
+        RubyLLM.enable!
+
+        # RubyLLM normalizes OpenAI response - tokens at top level, not in usage hash
+        ActiveSupport::Notifications.instrument("ruby_llm.request", {
+          provider: "openai",
+          request: { "model" => "gpt-4o", "messages" => [ { "content" => "Hi" } ] },
+          response: {
+            "role" => "assistant",
+            "content" => "Hello!",
+            "model_id" => "gpt-4o",
+            "input_tokens" => 100,
+            "output_tokens" => 50
+          },
+          meta: { project: "demo" }
+        })
+
+        interaction = Interaction.last
+        assert_equal "openai", interaction.provider
+        assert_equal 100, interaction.input_tokens
+        assert_equal 50, interaction.output_tokens
+      end
+
+      test "captures token counts from RubyLLM format for Anthropic provider" do
+        RubyLLM.enable!
+
+        # RubyLLM normalizes Anthropic response - tokens at top level
+        ActiveSupport::Notifications.instrument("ruby_llm.request", {
+          provider: "anthropic",
+          request: { "model" => "claude-3-5-sonnet", "messages" => [ { "content" => "Hi" } ] },
+          response: {
+            "role" => "assistant",
+            "content" => "Hello!",
+            "model_id" => "claude-3-5-sonnet",
+            "input_tokens" => 75,
+            "output_tokens" => 30
+          },
+          meta: { project: "demo" }
+        })
+
+        interaction = Interaction.last
+        assert_equal "anthropic", interaction.provider
+        assert_equal 75, interaction.input_tokens
+        assert_equal 30, interaction.output_tokens
+      end
+
+      test "raw API responses still route to provider-specific mappers" do
+        RubyLLM.enable!
+
+        # Raw OpenAI response (no top-level tokens) should use OpenAI mapper
+        ActiveSupport::Notifications.instrument("ruby_llm.request", {
+          provider: "openai",
+          request: { "model" => "gpt-4o", "messages" => [ { "content" => "Hi" } ] },
+          response: {
+            "choices" => [ { "message" => { "content" => "Hello" } } ],
+            "usage" => { "prompt_tokens" => 10, "completion_tokens" => 5 }
+          },
+          meta: { project: "demo" }
+        })
+
+        interaction = Interaction.last
+        assert_equal "openai", interaction.provider
+        assert_equal 10, interaction.input_tokens
+        assert_equal 5, interaction.output_tokens
       end
     end
   end
