@@ -8,9 +8,9 @@ module Tracebook
     end
 
     def show
-      blob = ActiveStorage::Blob.find_signed(params[:id])
+      blob = ActiveStorage::Blob.find_signed!(params[:id])
       send_data blob.download, filename: blob.filename.to_s, type: blob.content_type
-    rescue ActiveSupport::MessageVerifier::InvalidSignature
+    rescue ActiveSupport::MessageVerifier::InvalidSignature, ActiveRecord::RecordNotFound
       head :not_found
     end
 

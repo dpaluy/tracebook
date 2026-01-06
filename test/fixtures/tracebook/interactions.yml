@@ -1,0 +1,43 @@
+# frozen_string_literal: true
+
+openai_gpt4o:
+  provider: openai
+  model: gpt-4o
+  status: 0 # success
+  review_state: 0 # pending
+  total_tokens: 100
+  input_tokens: 40
+  output_tokens: 60
+  cost_total_cents: 5
+  session_id: tb_test-session-001
+
+anthropic_claude:
+  provider: anthropic
+  model: claude-3
+  status: 0 # success
+  review_state: 0 # pending
+  total_tokens: 200
+  input_tokens: 80
+  output_tokens: 120
+  cost_total_cents: 10
+  session_id: tb_test-session-002
+
+openai_with_actor:
+  provider: openai
+  model: gpt-4
+  status: 0 # success
+  review_state: 0 # pending
+  total_tokens: 50
+  actor_type: User
+  actor_id: 1
+  session_id: tb_test-session-003
+
+anthropic_with_actor:
+  provider: anthropic
+  model: claude-3
+  status: 0 # success
+  review_state: 0 # pending
+  total_tokens: 75
+  actor_type: Project
+  actor_id: 2
+  session_id: tb_test-session-004

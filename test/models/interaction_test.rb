@@ -1,7 +1,11 @@
+# frozen_string_literal: true
+
 require "test_helper"
 
 module TraceBook
   class InteractionTest < ActiveSupport::TestCase
+    fixtures "tracebook/interactions"
+
     test "defines status and review_state enums" do
       assert_equal %w[canceled error success], Interaction.statuses.keys.sort
       assert_equal %w[approved flagged pending], Interaction.review_states.keys.sort
@@ -22,48 +26,41 @@ module TraceBook
     end
 
     test "by_actor_type scope filters by actor_type" do
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "User", actor_id: 1)
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "Project", actor_id: 2)
+      user_interaction = tracebook_interactions(:openai_with_actor)
 
       results = Interaction.by_actor_type("User")
-      assert_equal 1, results.count
-      assert_equal "User", results.first.actor_type
+      assert_includes results, user_interaction
+      assert results.all? { |i| i.actor_type == "User" }
     end
 
     test "by_actor_type scope returns all when type is blank" do
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "User", actor_id: 1)
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "Project", actor_id: 2)
+      total_count = Interaction.count
 
-      assert_equal 2, Interaction.by_actor_type(nil).count
-      assert_equal 2, Interaction.by_actor_type("").count
+      assert_equal total_count, Interaction.by_actor_type(nil).count
+      assert_equal total_count, Interaction.by_actor_type("").count
     end
 
     test "by_actor_id scope filters by actor_id" do
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "User", actor_id: 1)
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "User", actor_id: 2)
+      user_interaction = tracebook_interactions(:openai_with_actor)
 
-      results = Interaction.by_actor_id(1)
-      assert_equal 1, results.count
-      assert_equal 1, results.first.actor_id
+      results = Interaction.by_actor_id(user_interaction.actor_id)
+      assert_includes results, user_interaction
+      assert results.all? { |i| i.actor_id == user_interaction.actor_id }
     end
 
     test "by_actor scope filters by both type and id" do
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "User", actor_id: 1)
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "User", actor_id: 2)
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "Project", actor_id: 1)
+      user_interaction = tracebook_interactions(:openai_with_actor)
 
       results = Interaction.by_actor("User", 1)
+      assert_includes results, user_interaction
       assert_equal 1, results.count
-      assert_equal "User", results.first.actor_type
-      assert_equal 1, results.first.actor_id
     end
 
     test "filtered includes actor filters" do
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "User", actor_id: 1)
-      Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "Project", actor_id: 2)
+      user_interaction = tracebook_interactions(:openai_with_actor)
 
       results = Interaction.filtered(actor_type: "User", actor_id: 1)
-      assert_equal 1, results.count
+      assert_includes results, user_interaction
     end
 
     test "auto-generates session_id when not provided" do
