@@ -1,18 +1,16 @@
+# frozen_string_literal: true
+
 require "test_helper"
 
 module TraceBook
   class InteractionsControllerTest < ActionDispatch::IntegrationTest
     include Tracebook::Engine.routes.url_helpers
 
+    fixtures "tracebook/interactions"
+
     setup do
       @routes = Tracebook::Engine.routes
-      Interaction.create!(
-        provider: "openai",
-        model: "gpt-4o",
-        status: :success,
-        review_state: :pending,
-        total_tokens: 10
-      )
+      @interaction = tracebook_interactions(:openai_gpt4o)
     end
 
     test "renders index" do
@@ -30,41 +28,35 @@ module TraceBook
     end
 
     test "renders show" do
-      interaction = Interaction.first
-      get interaction_path(interaction)
+      get interaction_path(@interaction)
       assert_response :success
-      assert_match(/#{interaction.provider}/i, @response.body)
+      assert_match(/#{@interaction.provider}/i, @response.body)
     end
 
     test "rejects invalid review state" do
-      interaction = Interaction.first
+      post review_interaction_path(@interaction), params: { review_state: "invalid" }
 
-      post review_interaction_path(interaction), params: { review_state: "invalid" }
-
-      assert_redirected_to interaction_path(interaction)
+      assert_redirected_to interaction_path(@interaction)
       assert_equal "Invalid review state: invalid", flash[:alert]
-      assert_equal "pending", interaction.reload.review_state
+      assert_equal "pending", @interaction.reload.review_state
     end
 
     test "rejects invalid state in bulk review" do
-      interaction = Interaction.first
-
-      post bulk_review_interactions_path, params: { review_state: "bad", interaction_ids: [ interaction.id ] }
+      post bulk_review_interactions_path, params: { review_state: "bad", interaction_ids: [ @interaction.id ] }
 
       assert_redirected_to interactions_path
       assert_equal "Invalid review state: bad", flash[:alert]
-      assert_equal "pending", interaction.reload.review_state
+      assert_equal "pending", @interaction.reload.review_state
     end
 
     test "bulk review approves selected interactions" do
-      interaction1 = Interaction.first
-      interaction2 = Interaction.create!(provider: "anthropic", model: "claude-3", status: :success, total_tokens: 20)
+      interaction2 = tracebook_interactions(:anthropic_claude)
 
-      post bulk_review_interactions_path, params: { review_state: "approved", interaction_ids: [ interaction1.id, interaction2.id ] }
+      post bulk_review_interactions_path, params: { review_state: "approved", interaction_ids: [ @interaction.id, interaction2.id ] }
 
       assert_redirected_to interactions_path
       assert_equal "Updated 2 interactions", flash[:notice]
-      assert_equal "approved", interaction1.reload.review_state
+      assert_equal "approved", @interaction.reload.review_state
       assert_equal "approved", interaction2.reload.review_state
     end
 
@@ -124,8 +116,6 @@ module TraceBook
     end
 
     test "csv format respects filters" do
-      Interaction.create!(provider: "anthropic", model: "claude-3", status: :success, total_tokens: 20)
-
       get interactions_path(format: :csv, filters: { provider: "openai" })
 
       assert_response :success

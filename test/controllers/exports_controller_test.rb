@@ -6,18 +6,11 @@ module TraceBook
   class ExportsControllerTest < ActionDispatch::IntegrationTest
     include Tracebook::Engine.routes.url_helpers
 
+    fixtures "tracebook/interactions"
+
     setup do
       @routes = Tracebook::Engine.routes
-      @interaction = Tracebook::Interaction.create!(
-        provider: "openai",
-        model: "gpt-4o",
-        status: :success,
-        review_state: :pending,
-        total_tokens: 100,
-        input_tokens: 40,
-        output_tokens: 60,
-        cost_total_cents: 5
-      )
+      @interaction = tracebook_interactions(:openai_gpt4o)
     end
 
     test "creates CSV export" do
@@ -65,7 +58,7 @@ module TraceBook
       lines = response.body.split("\n")
       assert lines.any?, "Should have at least one line"
       json = JSON.parse(lines.first)
-      assert_equal "openai", json["provider"]
+      assert_includes %w[openai anthropic], json["provider"]
     end
 
     test "returns 404 for invalid signed id" do
