@@ -104,7 +104,7 @@ module Tracebook
     end
 
     def actor_type_options(actor_types)
-      actor_types.map { |type| [type.demodulize, type] }
+      actor_types.map { |type| [ type.demodulize, type ] }
     end
 
     def fallback_actor_display(interaction)

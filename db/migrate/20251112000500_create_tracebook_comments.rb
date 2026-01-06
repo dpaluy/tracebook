@@ -10,6 +10,6 @@ class CreateTracebookComments < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :tracebook_comments, [:interaction_id, :created_at]
+    add_index :tracebook_comments, [ :interaction_id, :created_at ]
   end
 end

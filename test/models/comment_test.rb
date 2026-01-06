@@ -90,7 +90,7 @@ module TraceBook
 
       ordered = Comment.chronological
 
-      assert_equal [comment1.id, comment2.id, comment3.id], ordered.pluck(:id)
+      assert_equal [ comment1.id, comment2.id, comment3.id ], ordered.pluck(:id)
     end
 
     test "interaction.comments returns in chronological order" do
