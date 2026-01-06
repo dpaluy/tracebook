@@ -49,6 +49,22 @@ bin/rails db:migrate
 
 The install generator copies migrations and creates `config/initializers/tracebook.rb`.
 
+### Seed Pricing Rules (Recommended)
+
+TraceBook includes default pricing rules for common LLM providers. Seed them to enable cost tracking:
+
+```bash
+bin/rails tracebook:seed_pricing
+```
+
+This seeds pricing for:
+- **Gemini**: gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash
+- **OpenAI**: gpt-4o, gpt-4o-mini, gpt-4-turbo
+- **Anthropic**: claude-3-5-sonnet, claude-3-5-haiku, claude-3-opus
+- **Ollama**: All models (free/local)
+
+The task is idempotent - run it again after gem updates to add new model pricing.
+
 ### Mount the engine
 
 Add to `config/routes.rb`:
@@ -518,7 +534,15 @@ end
 
 ## Cost Tracking
 
-TraceBook automatically calculates costs based on `PricingRule` records. Create pricing rules for your providers/models:
+TraceBook automatically calculates costs based on `PricingRule` records. The easiest way to get started is with the built-in seed task:
+
+```bash
+bin/rails tracebook:seed_pricing
+```
+
+This creates pricing rules for Gemini, OpenAI, Anthropic, and Ollama models. See [Seed Pricing Rules](#seed-pricing-rules-recommended) for details.
+
+For custom models or updated pricing, create rules manually:
 
 ```ruby
 # db/seeds.rb or a migration

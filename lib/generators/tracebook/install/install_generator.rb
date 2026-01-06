@@ -29,6 +29,7 @@ module Tracebook
         say ""
         say "  3. Configure authorization in config/initializers/tracebook.rb"
         say "  4. Set up ActiveRecord encryption (see README)"
+        say "  5. Seed default pricing:  bin/rails tracebook:seed_pricing"
         say ""
       end
     end
