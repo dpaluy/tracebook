@@ -6,6 +6,7 @@ require_relative "mappers/base"
 require_relative "mappers/openai"
 require_relative "mappers/anthropic"
 require_relative "mappers/ollama"
+require_relative "mappers/gemini"
 
 module Tracebook
   # Mappers normalize provider-specific request/response formats into TraceBook's
@@ -78,12 +79,15 @@ module Tracebook
         normalize_openai(raw_request, raw_response, meta)
       when "anthropic"
         normalize_anthropic(raw_request, raw_response, meta)
+      when "gemini", "google"
+        Mappers::Gemini.new.normalize(raw_request: raw_request, raw_response: raw_response, meta: meta)
       when "ollama"
         normalize_ollama(raw_request, raw_response, meta)
       else
         fallback_normalized(provider, raw_request, raw_response, meta)
       end
     end
+
 
     private
 
