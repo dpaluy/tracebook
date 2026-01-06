@@ -8,14 +8,23 @@ module Tracebook
     helper InteractionsHelper
 
     def index
-      @filters = filter_params
-      scope = Interaction.filtered(@filters)
-      @kpis = kpis_for(scope)
-      @pagy, @interactions = pagy(:offset, scope.order(created_at: :desc), limit: Tracebook.config.per_page)
-      @providers = Interaction.distinct.order(:provider).pluck(:provider)
-      @models = Interaction.distinct.order(:model).pluck(:model)
-      @projects = Interaction.distinct.order(:project).pluck(:project).compact
-      @actor_types = Interaction.where.not(actor_type: nil).distinct.order(:actor_type).pluck(:actor_type)
+      respond_to do |format|
+        format.html do
+          @filters = filter_params
+          scope = Interaction.filtered(@filters)
+          @kpis = kpis_for(scope)
+          @pagy, @interactions = pagy(:offset, scope.order(created_at: :desc), limit: Tracebook.config.per_page)
+          @providers = Interaction.distinct.order(:provider).pluck(:provider)
+          @models = Interaction.distinct.order(:model).pluck(:model)
+          @projects = Interaction.distinct.order(:project).pluck(:project).compact
+          @actor_types = Interaction.where.not(actor_type: nil).distinct.order(:actor_type).pluck(:actor_type)
+        end
+        format.csv do
+          blob = ExportJob.perform_now(format: :csv, filters: filter_params.to_h)
+          send_data blob.download, filename: blob.filename.to_s, type: blob.content_type
+        end
+        format.any { head :not_acceptable }
+      end
     end
 
     def show

@@ -105,5 +105,32 @@ module TraceBook
       assert_response :success
       assert_select "select[name='filters[provider]'] option[selected]", text: "anthropic"
     end
+
+    test "csv format returns csv content" do
+      get interactions_path(format: :csv)
+
+      assert_response :success
+      assert_equal "text/csv", response.content_type
+      assert_match(/tracebook-export-.*\.csv/, response.headers["Content-Disposition"])
+    end
+
+    test "csv format includes interaction data" do
+      get interactions_path(format: :csv)
+
+      assert_response :success
+      assert_match "timestamp", response.body
+      assert_match "provider", response.body
+      assert_match "openai", response.body
+    end
+
+    test "csv format respects filters" do
+      Interaction.create!(provider: "anthropic", model: "claude-3", status: :success, total_tokens: 20)
+
+      get interactions_path(format: :csv, filters: { provider: "openai" })
+
+      assert_response :success
+      assert_match "openai", response.body
+      assert_no_match(/anthropic/, response.body)
+    end
   end
 end

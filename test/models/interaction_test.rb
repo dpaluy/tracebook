@@ -31,11 +31,12 @@ module TraceBook
     end
 
     test "by_actor_type scope returns all when type is blank" do
+      initial_count = Interaction.count
       Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "User", actor_id: 1)
       Interaction.create!(provider: "openai", model: "gpt-4", actor_type: "Project", actor_id: 2)
 
-      assert_equal 2, Interaction.by_actor_type(nil).count
-      assert_equal 2, Interaction.by_actor_type("").count
+      assert_equal initial_count + 2, Interaction.by_actor_type(nil).count
+      assert_equal initial_count + 2, Interaction.by_actor_type("").count
     end
 
     test "by_actor_id scope filters by actor_id" do
