@@ -33,6 +33,7 @@ TraceBook is a Rails engine that ingests, redacts, and reviews LLM interactions 
   - [Built-in Adapters](#built-in-adapters)
 - [Creating Custom Adapters](#creating-custom-adapters)
 - [Creating Custom Mappers](#creating-custom-mappers)
+- [Actor Association](#actor-association)
 - [Cost Tracking](#cost-tracking)
 - [Reviewing Data](#reviewing-data)
 - [Production Setup](#production-setup)
@@ -173,7 +174,7 @@ TraceBook.record!(
   status: :success,
   tags: %w[triage priority],
   metadata: { ticket_id: ticket.id, context_label: "Support ticket ##{ticket.id}" },
-  user: current_user,
+  actor: current_user,  # or any ActiveRecord model: conversation, session, etc.
   session_id: session_id,
   parent_id: parent_interaction_id
 )
@@ -199,7 +200,7 @@ TraceBook.record!(
   - `error_message` (String) — Exception message on failure
   - `tags` (Array<String>) — Labels for filtering (e.g., ["prod", "high-priority"])
   - `metadata` (Hash) — Custom metadata (e.g., `{ ticket_id: 123 }`)
-  - `user` (ActiveRecord object) — Associated user (polymorphic)
+  - `actor` (ActiveRecord object) — Polymorphic association to any model (User, Conversation, Session, etc.)
   - `session_id` (String) — Session identifier for grouping related calls
   - `context_label` (String) — Human-readable label for the session (e.g., "Form #765 filling", "Support ticket #123"). Pass via `metadata: { context_label: "..." }`
   - `parent_id` (Integer) — Parent `Interaction` ID for hierarchical chains
@@ -275,7 +276,7 @@ class OpenAIService
         meta: {
           project: "support-chatbot",
           tags: ["customer-support", "triage"],
-          user: current_user,
+          actor: current_user,  # polymorphic: can be User, Conversation, etc.
           session_id: session.id,
           latency_ms: elapsed_ms,
           status: :success,
@@ -295,7 +296,7 @@ class OpenAIService
         response: nil,
         meta: {
           project: "support-chatbot",
-          user: current_user,
+          actor: current_user,
           session_id: session.id,
           latency_ms: elapsed_ms,
           status: :error,
@@ -531,6 +532,138 @@ end
 - Return a `Tracebook::NormalizedInteraction` instance
 - Handle missing fields gracefully (return `nil` for unavailable data)
 - Extract token counts if available, otherwise leave as `nil`
+
+## Actor Association
+
+TraceBook provides a polymorphic `actor` association on interactions, allowing you to link LLM calls to any domain object in your application (User, Conversation, Session, Chat, etc.). This enables filtering, audit trails, and usage tracking per context.
+
+### Why Use Actor?
+
+- **Filter interactions by context**: View all LLM calls for a specific user or conversation
+- **Audit trails**: Track which entity triggered each LLM request
+- **Usage tracking**: Analyze costs per user, session, or feature
+- **Dashboard grouping**: The TraceBook UI groups interactions by actor
+
+### Passing Actor
+
+Pass any ActiveRecord model via the `actor` parameter:
+
+```ruby
+# Via TraceBook.record!
+TraceBook.record!(
+  provider: "openai",
+  model: "gpt-4o",
+  request_payload: request,
+  response_payload: response,
+  actor: current_user  # User, Conversation, Session, etc.
+)
+
+# Via ActiveSupport::Notifications (for adapters)
+ActiveSupport::Notifications.instrument("ruby_llm.request", {
+  provider: "openai",
+  request: request,
+  response: response,
+  meta: {
+    actor: @conversation,  # Any ActiveRecord model
+    project: "chatbot"
+  }
+})
+```
+
+**Note:** For backwards compatibility, `trackable` is also accepted and maps to `actor`:
+
+```ruby
+# Both work identically
+meta: { actor: current_user }
+meta: { trackable: current_user }  # legacy, maps to actor
+```
+
+### Querying by Actor
+
+Use the provided scopes to filter interactions:
+
+```ruby
+# Find all interactions for a specific actor
+Tracebook::Interaction.by_actor("User", user.id)
+
+# Filter by actor type only
+Tracebook::Interaction.by_actor_type("Conversation")
+
+# Filter by actor ID only
+Tracebook::Interaction.by_actor_id(42)
+
+# Combined with other filters
+Tracebook::Interaction
+  .by_actor("User", current_user.id)
+  .by_provider("openai")
+  .between_dates(30.days.ago, Date.current)
+```
+
+### Accessing the Actor
+
+```ruby
+interaction = Tracebook::Interaction.find(id)
+interaction.actor       # => #<User id: 1, ...> or #<Conversation id: 5, ...>
+interaction.actor_type  # => "User"
+interaction.actor_id    # => 1
+```
+
+### Common Patterns
+
+**Per-user tracking in a service:**
+
+```ruby
+class AIAssistant
+  def initialize(user)
+    @user = user
+  end
+
+  def ask(question)
+    response = llm_client.chat(question)
+
+    TraceBook.record!(
+      provider: "openai",
+      model: "gpt-4o",
+      request_payload: { messages: [{ role: "user", content: question }] },
+      response_payload: response,
+      actor: @user  # All calls linked to user
+    )
+
+    response
+  end
+end
+```
+
+**Per-conversation tracking:**
+
+```ruby
+class ConversationController < ApplicationController
+  def message
+    @conversation = Conversation.find(params[:id])
+
+    response = llm_service.chat(params[:message])
+
+    TraceBook.record!(
+      provider: "anthropic",
+      model: "claude-3-5-sonnet",
+      request_payload: request_data,
+      response_payload: response,
+      actor: @conversation,  # Track by conversation
+      session_id: @conversation.id.to_s,
+      metadata: { context_label: "Chat: #{@conversation.title}" }
+    )
+  end
+end
+```
+
+### Dashboard Display
+
+When `actor` is set, the TraceBook dashboard displays:
+- **Actors view**: Groups interactions by actor type and ID
+- **KPI tiles**: Shows "ACTORS" count in the summary
+- **Filtering**: Filter interactions by actor type in the index view
+
+If `actor` is not set, interactions show "—" in the context column.
 
 ## Cost Tracking
 
