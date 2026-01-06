@@ -1,0 +1,102 @@
+<div class="tb-container">
+  <header class="tb-header">
+    <div class="tb-breadcrumb">
+      <%= link_to "&larr; Back to #{actor_display_name(@actor_type, @actor_id)}".html_safe, actor_path(type: type_to_param(@actor_type), id: @actor_id), class: "tb-back-link" %>
+    </div>
+    <h1><%= @llm_session.context_label %></h1>
+    <p class="tb-session-meta">
+      <span class="tb-actor-name"><%= actor_display_name(@actor_type, @actor_id) %></span>
+      <span class="tb-model-badge"><%= @llm_session.model %></span>
+    </p>
+    <div class="tb-kpis">
+      <div class="tb-kpi">
+        <span>Turns</span>
+        <strong><%= @kpis[:interactions_count] %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Tokens</span>
+        <strong><%= number_with_delimiter(@kpis[:total_tokens]) %></strong>
+        <small><%= number_with_delimiter(@kpis[:input_tokens]) %> / <%= number_with_delimiter(@kpis[:output_tokens]) %></small>
+      </div>
+      <div class="tb-kpi">
+        <span>Cost</span>
+        <strong><%= cents_to_human(@kpis[:total_cost_cents]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Avg Latency</span>
+        <strong><%= @llm_session.formatted_latency %></strong>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tb-nav-tabs">
+    <%= link_to "Actors", actors_path, class: "tb-nav-tab" %>
+    <%= link_to "All Interactions", interactions_path, class: "tb-nav-tab" %>
+  </nav>
+
+  <section class="tb-session-actions">
+    <%= form_with url: bulk_review_interactions_path, method: :post do %>
+      <% @interactions.each do |interaction| %>
+        <%= hidden_field_tag "interaction_ids[]", interaction.id %>
+      <% end %>
+      <%= hidden_field_tag :review_state, "approved" %>
+      <button type="submit" class="tb-btn-primary">Approve All</button>
+    <% end %>
+    <%= form_with url: bulk_review_interactions_path, method: :post do %>
+      <% @interactions.each do |interaction| %>
+        <%= hidden_field_tag "interaction_ids[]", interaction.id %>
+      <% end %>
+      <%= hidden_field_tag :review_state, "flagged" %>
+      <button type="submit" class="tb-btn-secondary">Flag All</button>
+    <% end %>
+  </section>
+
+  <section class="tb-conversation">
+    <h2 class="tb-section-title">Conversation</h2>
+    <div class="tb-chat">
+      <% @interactions.each_with_index do |interaction, index| %>
+        <%
+          # Get text from request_text/response_text, or extract from payloads
+          request_text = interaction.request_text.presence
+          response_text = interaction.response_text.presence
+
+          unless request_text
+            messages = extract_messages(interaction.request_payload)
+            user_message = messages.reverse.find { |m| m[:role] == "user" }
+            request_text = user_message[:content] if user_message
+          end
+
+          unless response_text
+            response_text = extract_response_content(interaction.response_payload)
+          end
+        %>
+
+        <% if request_text.present? %>
+          <div class="tb-chat-message tb-chat-user">
+            <div class="tb-chat-label">User</div>
+            <div class="tb-chat-content">
+              <%= simple_format(truncate_message(request_text, 2000)) %>
+            </div>
+          </div>
+        <% end %>
+
+        <% if response_text.present? %>
+          <div class="tb-chat-message tb-chat-assistant">
+            <div class="tb-chat-label">Assistant</div>
+            <div class="tb-chat-content">
+              <%= simple_format(truncate_message(response_text, 2000)) %>
+            </div>
+            <div class="tb-chat-meta">
+              <span class="tb-chat-turn">#<%= index + 1 %></span>
+              <%= review_badge(interaction.review_state) %>
+              <span><%= number_with_delimiter(interaction.total_tokens) %> tok</span>
+              <span><%= cents_to_human(interaction.cost_total_cents) %></span>
+              <span><%= interaction.latency_ms %>ms</span>
+              <%= link_to "Review", interaction_path(interaction), class: "tb-chat-review-link" %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </section>
+</div>

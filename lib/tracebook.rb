@@ -37,7 +37,9 @@ require "tracebook/adapters"
 #     response_payload: response,
 #     input_tokens: 100,
 #     output_tokens: 50,
-#     trackable: current_user,
+#     actor: current_user,
+#     session_id: @conversation.id.to_s,
+#     metadata: { context_label: "Form ##{@form.id} filling" },
 #     tags: ["production", "support"]
 #   )
 #
@@ -113,9 +115,9 @@ module Tracebook
     # @option attributes [String, nil] :error_class Exception class name on failure
     # @option attributes [String, nil] :error_message Exception message on failure
     # @option attributes [Array<String>] :tags Labels for filtering (e.g., ["prod", "urgent"])
-    # @option attributes [Hash] :metadata Custom metadata (e.g., { ticket_id: 123 })
-    # @option attributes [ActiveRecord::Base, nil] :user Associated user (polymorphic)
-    # @option attributes [String, nil] :session_id Session identifier for grouping related calls
+    # @option attributes [Hash] :metadata Custom metadata (e.g., { context_label: "Form filling" })
+    # @option attributes [ActiveRecord::Base, nil] :actor Entity who triggers LLM request (polymorphic)
+    # @option attributes [String, nil] :session_id Session identifier for grouping related calls (auto-generated if missing)
     # @option attributes [Integer, nil] :parent_id Parent interaction ID for hierarchical chains
     # @option attributes [String, nil] :idempotency_key Key for deduplication
     #
@@ -131,7 +133,7 @@ module Tracebook
     #     output_tokens: 5,
     #     latency_ms: 150,
     #     status: :success,
-    #     trackable: current_user,
+    #     actor: current_user,
     #     tags: ["greeting"]
     #   )
     #
@@ -191,7 +193,7 @@ module Tracebook
         error_message: attributes[:error_message],
         tags: Array(attributes[:tags]).compact,
         metadata: attributes[:metadata] || {},
-        trackable: attributes[:trackable],
+        actor: attributes[:actor],
         parent_id: attributes[:parent_id],
         session_id: attributes[:session_id]
       )

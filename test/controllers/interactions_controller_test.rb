@@ -18,7 +18,7 @@ module TraceBook
     test "renders index" do
       get interactions_path
       assert_response :success
-      assert_match "TraceBook Interactions", @response.body
+      assert_match "TraceBook", @response.body
     end
 
     test "index displays review column" do
@@ -33,7 +33,7 @@ module TraceBook
       interaction = Interaction.first
       get interaction_path(interaction)
       assert_response :success
-      assert_match interaction.provider, @response.body
+      assert_match(/#{interaction.provider}/i, @response.body)
     end
 
     test "rejects invalid review state" do

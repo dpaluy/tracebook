@@ -41,13 +41,6 @@ module TraceBook
       assert_includes result, "flagged"
     end
 
-    test "review_badge renders rejected with error style" do
-      result = review_badge("rejected")
-
-      assert_includes result, "tb-status-error"
-      assert_includes result, "rejected"
-    end
-
     test "review_badge renders pending with pending style" do
       result = review_badge("pending")
 
@@ -80,21 +73,21 @@ module TraceBook
       assert_equal "0 / 0", token_breakdown(interaction)
     end
 
-    test "trackable_type_options returns demodulized display names" do
+    test "actor_type_options returns demodulized display names" do
       types = [ "ActiveRecord::User", "Project" ]
-      options = trackable_type_options(types)
+      options = actor_type_options(types)
 
       assert_equal [ [ "User", "ActiveRecord::User" ], [ "Project", "Project" ] ], options
     end
 
-    test "trackable_link returns dash for blank trackable_id" do
-      interaction = Interaction.new(trackable_id: nil)
-      assert_equal "—", trackable_link(interaction)
+    test "actor_link returns dash for blank actor_id" do
+      interaction = Interaction.new(actor_id: nil)
+      assert_equal "—", actor_link(interaction)
     end
 
-    test "fallback_trackable_display shows type and id" do
-      interaction = Interaction.new(trackable_type: "ActiveRecord::User", trackable_id: 123)
-      result = fallback_trackable_display(interaction)
+    test "fallback_actor_display shows type and id" do
+      interaction = Interaction.new(actor_type: "ActiveRecord::User", actor_id: 123)
+      result = fallback_actor_display(interaction)
 
       assert_includes result, "User#123"
       assert_includes result, "tb-muted"

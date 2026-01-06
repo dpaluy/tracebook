@@ -20,11 +20,14 @@ class CreateTracebookInteractions < ActiveRecord::Migration[8.0]
 
       t.integer :status, null: false, default: 0
       t.integer :review_state, null: false, default: 0
+      t.text :review_comment
+      t.datetime :reviewed_at
+      t.string :reviewed_by
       t.string :error_class
       t.text :error_message
 
-      t.string :trackable_type
-      t.bigint :trackable_id
+      t.string :actor_type
+      t.bigint :actor_id
       t.bigint :parent_id
 
       t.text :tags
@@ -50,6 +53,6 @@ class CreateTracebookInteractions < ActiveRecord::Migration[8.0]
     add_index :tracebook_interactions, :status
     add_index :tracebook_interactions, :review_state
     add_index :tracebook_interactions, :parent_id
-    add_index :tracebook_interactions, [ :trackable_type, :trackable_id ]
+    add_index :tracebook_interactions, [ :actor_type, :actor_id ]
   end
 end

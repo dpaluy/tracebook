@@ -40,5 +40,8 @@ module Dummy
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    # Include engine migrations for test database setup
+    config.paths["db/migrate"] << File.expand_path("../../../../db/migrate", __dir__)
   end
 end

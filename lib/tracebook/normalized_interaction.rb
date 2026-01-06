@@ -22,7 +22,7 @@ module Tracebook
   # @attr error_message [String, nil] Exception message on failure
   # @attr tags [Array<String>] Labels for filtering
   # @attr metadata [Hash] Custom metadata
-  # @attr trackable [ActiveRecord::Base, nil] Associated context object (polymorphic)
+  # @attr actor [ActiveRecord::Base, nil] Entity who triggers LLM request (polymorphic)
   # @attr parent_id [Integer, nil] Parent interaction ID for hierarchical chains
   # @attr session_id [String, nil] Session identifier for grouping related calls
   #
@@ -54,7 +54,7 @@ module Tracebook
     :error_message,
     :tags,
     :metadata,
-    :trackable,
+    :actor,
     :parent_id,
     :session_id
   ) do
@@ -74,7 +74,7 @@ module Tracebook
       error_message: nil,
       tags: [],
       metadata: {},
-      trackable: nil,
+      actor: nil,
       parent_id: nil,
       session_id: nil
     )

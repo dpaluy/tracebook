@@ -156,7 +156,7 @@ TraceBook.record!(
   latency_ms: 187,
   status: :success,
   tags: %w[triage priority],
-  metadata: { ticket_id: ticket.id },
+  metadata: { ticket_id: ticket.id, context_label: "Support ticket ##{ticket.id}" },
   user: current_user,
   session_id: session_id,
   parent_id: parent_interaction_id
@@ -185,6 +185,7 @@ TraceBook.record!(
   - `metadata` (Hash) — Custom metadata (e.g., `{ ticket_id: 123 }`)
   - `user` (ActiveRecord object) — Associated user (polymorphic)
   - `session_id` (String) — Session identifier for grouping related calls
+  - `context_label` (String) — Human-readable label for the session (e.g., "Form #765 filling", "Support ticket #123"). Pass via `metadata: { context_label: "..." }`
   - `parent_id` (Integer) — Parent `Interaction` ID for hierarchical chains
 
 **Return value:**

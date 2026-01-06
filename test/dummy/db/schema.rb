@@ -39,7 +39,19 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "tracebook_comments", force: :cascade do |t|
+    t.string "author", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.integer "interaction_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["interaction_id", "created_at"], name: "index_tracebook_comments_on_interaction_id_and_created_at"
+    t.index ["interaction_id"], name: "index_tracebook_comments_on_interaction_id"
+  end
+
   create_table "tracebook_interactions", force: :cascade do |t|
+    t.bigint "actor_id"
+    t.string "actor_type"
     t.integer "cost_input_cents", default: 0, null: false
     t.integer "cost_output_cents", default: 0, null: false
     t.integer "cost_total_cents", default: 0, null: false
@@ -63,14 +75,16 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
     t.bigint "response_payload_blob_id"
     t.string "response_payload_store", default: "inline", null: false
     t.text "response_text"
+    t.text "review_comment"
     t.integer "review_state", default: 0, null: false
+    t.datetime "reviewed_at"
+    t.string "reviewed_by"
     t.string "session_id"
     t.integer "status", default: 0, null: false
     t.text "tags"
     t.integer "total_tokens"
-    t.bigint "trackable_id"
-    t.string "trackable_type"
     t.datetime "updated_at", null: false
+    t.index ["actor_type", "actor_id"], name: "index_tracebook_interactions_on_actor_type_and_actor_id"
     t.index ["created_at"], name: "index_tracebook_interactions_on_created_at"
     t.index ["parent_id"], name: "index_tracebook_interactions_on_parent_id"
     t.index ["project", "created_at"], name: "index_tracebook_interactions_on_project_and_created_at"
@@ -78,7 +92,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
     t.index ["review_state"], name: "index_tracebook_interactions_on_review_state"
     t.index ["session_id"], name: "index_tracebook_interactions_on_session_id"
     t.index ["status"], name: "index_tracebook_interactions_on_status"
-    t.index ["trackable_type", "trackable_id"], name: "idx_on_trackable_type_trackable_id_f0eb623f85"
   end
 
   create_table "tracebook_pricing_rules", force: :cascade do |t|
@@ -128,4 +141,5 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "tracebook_comments", "tracebook_interactions", column: "interaction_id"
 end
