@@ -10,6 +10,7 @@ require "tracebook/normalized_interaction"
 require "tracebook/redaction_pipeline"
 require "tracebook/pricing"
 require "tracebook/adapters"
+require "tracebook/seeds/pricing_rules"
 
 # TraceBook is a Rails engine for capturing, storing, and reviewing LLM interactions.
 #
