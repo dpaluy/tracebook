@@ -56,7 +56,11 @@ module Tracebook
     :metadata,
     :actor,
     :parent_id,
-    :session_id
+    :session_id,
+    :actor_type,
+    :actor_id,
+    :actor_gid,
+    :redaction_audit
   ) do
     def initialize(
       provider:,
@@ -76,7 +80,11 @@ module Tracebook
       metadata: {},
       actor: nil,
       parent_id: nil,
-      session_id: nil
+      session_id: nil,
+      actor_type: nil,
+      actor_id: nil,
+      actor_gid: nil,
+      redaction_audit: nil
     )
       super
     end
