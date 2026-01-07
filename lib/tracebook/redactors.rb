@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# Redactors module - patterns and validators will be loaded here
-# TODO: require_relative "redactors/patterns"
-# TODO: require_relative "redactors/validators"
+require_relative "redactors/patterns"
+require_relative "redactors/validators"
+require_relative "redactors/llm_based"
 
 TraceBook = Tracebook unless defined?(TraceBook)
