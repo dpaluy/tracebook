@@ -97,6 +97,38 @@ module Tracebook
       @configuration_finalized = false
     end
 
+    # Serializes an actor for job-safe persistence.
+    #
+    # Converts an ActiveRecord object (or similar) into a hash that can be
+    # safely passed to background jobs. Prefers GlobalID when available for
+    # reliable deserialization, falls back to type/id tuple otherwise.
+    #
+    # @param actor [ActiveRecord::Base, nil] The actor to serialize
+    # @return [Hash] Serialized actor data with :actor_gid or :actor_type/:actor_id keys
+    #
+    # @example With a User model (GlobalID available)
+    #   TraceBook.serialize_actor(User.find(1))
+    #   # => { actor_gid: "gid://myapp/User/1" }
+    #
+    # @example With a plain object (no GlobalID)
+    #   TraceBook.serialize_actor(some_object)
+    #   # => { actor_type: "SomeObject", actor_id: 123 }
+    #
+    # @example With nil
+    #   TraceBook.serialize_actor(nil)
+    #   # => {}
+    def serialize_actor(actor)
+      return {} unless actor
+
+      if actor.respond_to?(:to_global_id)
+        { actor_gid: actor.to_global_id.to_s }
+      elsif actor.respond_to?(:id) && actor.class.respond_to?(:name)
+        { actor_type: actor.class.name, actor_id: actor.id }
+      else
+        {}
+      end
+    end
+
     # Records an LLM interaction.
     #
     # When `config.persist_async` is true, the interaction is enqueued via
