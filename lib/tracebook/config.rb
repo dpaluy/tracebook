@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "redactors/patterns"
+
 module Tracebook
   # Configuration object for TraceBook.
   #
@@ -14,7 +16,14 @@ module Tracebook
   #     config.default_currency = "USD"
   #   end
   #
-  # @example With custom redactors
+  # @example Pattern-based redaction DSL
+  #   TraceBook.configure do |config|
+  #     config.redact :email, :phone, :credit_card    # Enable specific patterns
+  #     config.redact_group :api_keys                  # Enable pattern group
+  #     config.redact_pattern(/secret=\w+/, "[SECRET]") # Custom pattern
+  #   end
+  #
+  # @example Legacy custom redactors (lambdas)
   #   TraceBook.configure do |config|
   #     config.custom_redactors += [
   #       ->(payload) { payload.gsub(/api_key=\w+/, "api_key=[REDACTED]") }
@@ -88,6 +97,14 @@ module Tracebook
     #     config.actor_display = ->(actor) { actor.full_name }
     attr_accessor :actor_display
 
+    # @!attribute [r] enabled_patterns
+    #   @return [Array<Symbol>] Pattern symbols enabled via redact DSL
+    attr_reader :enabled_patterns
+
+    # @!attribute [r] custom_patterns
+    #   @return [Array<Redactors::Pattern>] Custom patterns added via redact_pattern
+    attr_reader :custom_patterns
+
     # Creates a new configuration with default values.
     #
     # @return [Config]
@@ -103,6 +120,83 @@ module Tracebook
       @auto_subscribe_active_agent = false
       @per_page = 100
       @actor_display = nil
+      @enabled_patterns = []
+      @custom_patterns = []
+    end
+
+    # Enable one or more built-in redaction patterns.
+    #
+    # @param names [Array<Symbol>] Pattern names from {Redactors::PATTERNS}
+    # @raise [ConfigurationError] if any name is not a valid pattern
+    # @return [void]
+    #
+    # @example Enable email and phone redaction
+    #   config.redact :email, :phone
+    #
+    # @example Enable financial PII
+    #   config.redact :credit_card, :ssn
+    def redact(*names)
+      names.each do |name|
+        unless Redactors::PATTERNS.key?(name)
+          valid_patterns = Redactors::PATTERNS.keys.join(", ")
+          raise ConfigurationError, "Unknown pattern: #{name}. Valid patterns: #{valid_patterns}"
+        end
+        @enabled_patterns << name unless @enabled_patterns.include?(name)
+      end
+    end
+
+    # Enable a group of related patterns.
+    #
+    # @param group_name [Symbol] Group name from {Redactors::PATTERN_GROUPS}
+    # @raise [ConfigurationError] if group name is not valid
+    # @return [void]
+    #
+    # @example Enable all API key patterns
+    #   config.redact_group :api_keys
+    #
+    # @see Redactors::PATTERN_GROUPS
+    def redact_group(group_name)
+      unless Redactors::PATTERN_GROUPS.key?(group_name)
+        valid_groups = Redactors::PATTERN_GROUPS.keys.join(", ")
+        raise ConfigurationError, "Unknown pattern group: #{group_name}. Valid groups: #{valid_groups}"
+      end
+
+      Redactors::PATTERN_GROUPS[group_name].each do |pattern_name|
+        @enabled_patterns << pattern_name unless @enabled_patterns.include?(pattern_name)
+      end
+    end
+
+    # Add a custom regex pattern for redaction.
+    #
+    # @param regex [Regexp] The pattern to match
+    # @param replacement [String] The replacement text (e.g., "[REDACTED]")
+    # @param name [String] Name for audit trail (defaults to "custom_N")
+    # @return [void]
+    #
+    # @example Redact custom API keys
+    #   config.redact_pattern(/myapp_key_\w+/, "[MYAPP_KEY]")
+    #
+    # @example Named custom pattern
+    #   config.redact_pattern(/secret=\w+/, "[SECRET]", name: "app_secret")
+    def redact_pattern(regex, replacement, name: nil)
+      pattern_name = name || "custom_#{@custom_patterns.size + 1}"
+      pattern = Redactors::Pattern.new(
+        regex: regex,
+        replacement: replacement,
+        name: pattern_name
+      )
+      @custom_patterns << pattern
+    end
+
+    # Returns all enabled Pattern objects for redaction.
+    #
+    # Combines patterns enabled via {#redact} and {#redact_group}
+    # with custom patterns from {#redact_pattern}.
+    #
+    # @return [Array<Redactors::Pattern>]
+    def active_patterns
+      patterns = @enabled_patterns.map { |name| Redactors::PATTERNS[name] }
+      patterns + @custom_patterns
     end
 
     # Returns true if configuration has been finalized.
@@ -136,6 +230,8 @@ module Tracebook
       @redactors = @redactors.map { |redactor| redactor }.freeze
       @custom_redactors = @custom_redactors.map { |callable| callable }.freeze
       @export_formats = @export_formats.map(&:to_sym).freeze
+      @enabled_patterns = @enabled_patterns.dup.freeze
+      @custom_patterns = @custom_patterns.dup.freeze
     end
   end
 end
