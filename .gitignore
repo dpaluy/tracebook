@@ -28,4 +28,5 @@ CLAUDE.md
 .worktrees/
 .repoprompt/
 docs/
+tracebook-worktrees/
 .beads/
