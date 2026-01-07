@@ -73,6 +73,7 @@ module Tracebook
 
     attribute :tags, :json, default: []
     attribute :metadata, :json, default: {}
+    attribute :redaction_audit, :json, default: {}
     attribute :request_payload, :json, default: {}
     attribute :response_payload, :json, default: {}
 

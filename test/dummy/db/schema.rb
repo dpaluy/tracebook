@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_07_000100) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -67,6 +67,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
     t.bigint "parent_id"
     t.string "project"
     t.string "provider", null: false
+    t.text "redaction_audit"
     t.text "request_payload"
     t.bigint "request_payload_blob_id"
     t.string "request_payload_store", default: "inline", null: false
