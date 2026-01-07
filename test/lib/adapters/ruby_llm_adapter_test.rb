@@ -20,62 +20,6 @@ module TraceBook
         RubyLLM.enable!
 
         ActiveSupport::Notifications.instrument("ruby_llm.request", {
-          provider: "openai",
-          request: { "model" => "gpt-4o", "messages" => [ { "content" => "Hi" } ] },
-          response: { "choices" => [ { "message" => { "content" => "Hello" } } ], "usage" => { "prompt_tokens" => 10, "completion_tokens" => 5 } },
-          meta: { project: "demo" }
-        })
-
-        assert_equal 1, Interaction.count
-        interaction = Interaction.first
-        assert_equal "openai", interaction.provider
-        assert_equal 15, interaction.total_tokens
-      end
-
-      test "captures token counts from Gemini response with usageMetadata" do
-        RubyLLM.enable!
-
-        ActiveSupport::Notifications.instrument("ruby_llm.request", {
-          provider: "gemini",
-          request: { "model" => "gemini-2.0-flash", "messages" => [ { "content" => "Hi" } ] },
-          response: {
-            "content" => "Hello",
-            "usageMetadata" => { "promptTokenCount" => 50, "candidatesTokenCount" => 25 }
-          },
-          meta: { project: "demo" }
-        })
-
-        assert_equal 1, Interaction.count
-        interaction = Interaction.first
-        assert_equal "gemini", interaction.provider
-        assert_equal 50, interaction.input_tokens
-        assert_equal 25, interaction.output_tokens
-        assert_equal 75, interaction.total_tokens
-      end
-
-      test "uses meta tokens over response tokens for Gemini" do
-        RubyLLM.enable!
-
-        ActiveSupport::Notifications.instrument("ruby_llm.request", {
-          provider: "gemini",
-          request: { "model" => "gemini-2.0-flash", "messages" => [ { "content" => "Hi" } ] },
-          response: {
-            "content" => "Hello",
-            "usageMetadata" => { "promptTokenCount" => 50, "candidatesTokenCount" => 25 }
-          },
-          meta: { project: "demo", input_tokens: 100, output_tokens: 40 }
-        })
-
-        interaction = Interaction.last
-        assert_equal 100, interaction.input_tokens, "Should prioritize meta tokens"
-        assert_equal 40, interaction.output_tokens
-      end
-
-      test "captures token counts from RubyLLM Message#to_h format (top-level tokens) for Gemini" do
-        RubyLLM.enable!
-
-        # RubyLLM normalizes Gemini response and puts tokens at top level
-        ActiveSupport::Notifications.instrument("ruby_llm.request", {
           provider: "gemini",
           request: { "model" => "gemini-2.0-flash", "messages" => [ { "content" => "Hi" } ] },
           response: {
@@ -88,17 +32,18 @@ module TraceBook
           meta: { project: "demo" }
         })
 
-        interaction = Interaction.last
+        assert_equal 1, Interaction.count
+        interaction = Interaction.first
         assert_equal "gemini", interaction.provider
+        assert_equal "gemini-2.0-flash", interaction.model
         assert_equal 50, interaction.input_tokens
         assert_equal 25, interaction.output_tokens
         assert_equal 75, interaction.total_tokens
       end
 
-      test "captures token counts from RubyLLM format for OpenAI provider" do
+      test "captures token counts for OpenAI provider" do
         RubyLLM.enable!
 
-        # RubyLLM normalizes OpenAI response - tokens at top level, not in usage hash
         ActiveSupport::Notifications.instrument("ruby_llm.request", {
           provider: "openai",
           request: { "model" => "gpt-4o", "messages" => [ { "content" => "Hi" } ] },
@@ -114,14 +59,14 @@ module TraceBook
 
         interaction = Interaction.last
         assert_equal "openai", interaction.provider
+        assert_equal "gpt-4o", interaction.model
         assert_equal 100, interaction.input_tokens
         assert_equal 50, interaction.output_tokens
       end
 
-      test "captures token counts from RubyLLM format for Anthropic provider" do
+      test "captures token counts for Anthropic provider" do
         RubyLLM.enable!
 
-        # RubyLLM normalizes Anthropic response - tokens at top level
         ActiveSupport::Notifications.instrument("ruby_llm.request", {
           provider: "anthropic",
           request: { "model" => "claude-3-5-sonnet", "messages" => [ { "content" => "Hi" } ] },
@@ -137,28 +82,62 @@ module TraceBook
 
         interaction = Interaction.last
         assert_equal "anthropic", interaction.provider
+        assert_equal "claude-3-5-sonnet", interaction.model
         assert_equal 75, interaction.input_tokens
         assert_equal 30, interaction.output_tokens
       end
 
-      test "raw API responses still route to provider-specific mappers" do
+      test "extracts request text from messages" do
         RubyLLM.enable!
 
-        # Raw OpenAI response (no top-level tokens) should use OpenAI mapper
         ActiveSupport::Notifications.instrument("ruby_llm.request", {
-          provider: "openai",
-          request: { "model" => "gpt-4o", "messages" => [ { "content" => "Hi" } ] },
+          provider: "gemini",
+          request: {
+            "model" => "gemini-2.0-flash",
+            "messages" => [
+              { "content" => "Hello" },
+              { "content" => "How are you?" }
+            ]
+          },
           response: {
-            "choices" => [ { "message" => { "content" => "Hello" } } ],
-            "usage" => { "prompt_tokens" => 10, "completion_tokens" => 5 }
+            "content" => "I'm fine!",
+            "model_id" => "gemini-2.0-flash",
+            "input_tokens" => 10,
+            "output_tokens" => 5
           },
           meta: { project: "demo" }
         })
 
         interaction = Interaction.last
-        assert_equal "openai", interaction.provider
-        assert_equal 10, interaction.input_tokens
-        assert_equal 5, interaction.output_tokens
+        assert_equal "Hello\n\nHow are you?", interaction.request_text
+        assert_equal "I'm fine!", interaction.response_text
+      end
+
+      test "stores metadata from meta hash" do
+        RubyLLM.enable!
+
+        ActiveSupport::Notifications.instrument("ruby_llm.request", {
+          provider: "gemini",
+          request: { "messages" => [ { "content" => "Hi" } ] },
+          response: {
+            "content" => "Hello!",
+            "model_id" => "gemini-2.0-flash",
+            "input_tokens" => 10,
+            "output_tokens" => 5
+          },
+          meta: {
+            project: "my-project",
+            session_id: "session-123",
+            latency_ms: 250,
+            tags: %w[production important]
+          }
+        })
+
+        interaction = Interaction.last
+        assert_equal "my-project", interaction.project
+        assert_equal "session-123", interaction.session_id
+        assert_equal 250, interaction.latency_ms
+        assert_equal %w[production important], interaction.tags
       end
     end
   end
