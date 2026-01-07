@@ -38,15 +38,23 @@ module TraceBook
         @bus.publish(
           provider: "openai",
           request: { "model" => "gpt-4o", "messages" => [ { "content" => "Plan" } ] },
-          response: { "choices" => [ { "message" => { "content" => "Step" } } ] },
+          response: {
+            "content" => "Step",
+            "model_id" => "gpt-4o",
+            "input_tokens" => 10,
+            "output_tokens" => 5
+          },
           meta: { project: "demo", tags: [ "agent" ] },
           session_id: "session-1"
         )
 
         assert_equal 1, Interaction.count
         interaction = Interaction.first
+        assert_equal "openai", interaction.provider
         assert_equal "session-1", interaction.session_id
         assert_equal [ "agent" ], interaction.tags
+        assert_equal 10, interaction.input_tokens
+        assert_equal 5, interaction.output_tokens
       end
     end
   end
