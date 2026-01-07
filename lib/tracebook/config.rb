@@ -128,11 +128,8 @@ module Tracebook
     private
 
     def default_redactors
-      [
-        Tracebook::Redactors::Email.new,
-        Tracebook::Redactors::Phone.new,
-        Tracebook::Redactors::CardPAN.new
-      ]
+      # TODO: Replace with new Pattern-based redactors from T3/T7
+      []
     end
 
     def freeze_collections!

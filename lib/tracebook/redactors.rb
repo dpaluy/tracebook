@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "redactors/base"
-require_relative "redactors/email"
-require_relative "redactors/phone"
-require_relative "redactors/card_pan"
+# Redactors module - patterns and validators will be loaded here
+# TODO: require_relative "redactors/patterns"
+# TODO: require_relative "redactors/validators"
 
 TraceBook = Tracebook unless defined?(TraceBook)

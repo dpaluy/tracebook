@@ -15,8 +15,7 @@ class TraceBookConfigTest < ActiveSupport::TestCase
     assert_equal false, config.auto_subscribe_ruby_llm
     assert_equal false, config.auto_subscribe_active_agent
     assert_kind_of Array, config.redactors
-    assert_equal 3, config.redactors.length
-    assert config.redactors.all? { |redactor| redactor.respond_to?(:call) }
+    assert_equal 0, config.redactors.length  # No default redactors until new Pattern system is built
     assert_equal [], config.custom_redactors
   end
 

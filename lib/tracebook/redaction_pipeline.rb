@@ -14,7 +14,6 @@ module Tracebook
       data = normalized.to_h.deep_dup
 
       apply_callable_redactors!(data)
-      apply_database_rules!(data)
 
       NormalizedInteraction.new(**data)
     end
@@ -27,24 +26,6 @@ module Tracebook
         apply_to_request!(data, redactor)
         apply_to_response!(data, redactor)
         apply_to_metadata!(data, redactor)
-      end
-    end
-
-    def apply_database_rules!(data)
-      Tracebook::RedactionRule.where(enabled: true).order(:priority).find_each do |rule|
-        callable = ->(value) { redact_string(value, rule.compiled_pattern, rule.replacement) }
-
-        case rule.applies_to.to_sym
-        when :request
-          apply_to_request!(data, callable)
-        when :response
-          apply_to_response!(data, callable)
-        when :both
-          apply_to_request!(data, callable)
-          apply_to_response!(data, callable)
-        when :metadata
-          apply_to_metadata!(data, callable)
-        end
       end
     end
 
@@ -75,12 +56,6 @@ module Tracebook
       else
         value
       end
-    end
-
-    def redact_string(value, pattern, replacement)
-      return value unless value.is_a?(String)
-
-      value.gsub(pattern, replacement)
     end
   end
 end

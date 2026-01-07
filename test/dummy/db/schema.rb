@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_12_000500) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -107,19 +107,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_060837) do
     t.datetime "updated_at", null: false
     t.index ["provider", "effective_from"], name: "index_tracebook_pricing_on_provider_effective_from"
     t.index ["provider"], name: "index_tracebook_pricing_rules_on_provider"
-  end
-
-  create_table "tracebook_redaction_rules", force: :cascade do |t|
-    t.integer "applies_to", default: 2, null: false
-    t.datetime "created_at", null: false
-    t.boolean "enabled", default: true, null: false
-    t.string "name", null: false
-    t.text "pattern", null: false
-    t.integer "priority", default: 100, null: false
-    t.string "replacement", default: "[REDACTED]", null: false
-    t.datetime "updated_at", null: false
-    t.index ["enabled"], name: "index_tracebook_redaction_rules_on_enabled"
-    t.index ["priority"], name: "index_tracebook_redaction_rules_on_priority"
   end
 
   create_table "tracebook_rollups_dailies", force: :cascade do |t|

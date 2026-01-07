@@ -7,7 +7,6 @@ module TraceBook
       Interaction.delete_all
       RollupDaily.delete_all
       PricingRule.delete_all
-      RedactionRule.delete_all
       TraceBook.reset_configuration!
     end
 
@@ -16,21 +15,20 @@ module TraceBook
       Interaction.delete_all
       RollupDaily.delete_all
       PricingRule.delete_all
-      RedactionRule.delete_all
       TraceBook.reset_configuration!
     end
 
-    test "persists redacted interaction, computes cost, enqueues rollup" do
+    test "persists interaction, computes cost, enqueues rollup" do
       PricingRule.create!(provider: "openai", model_glob: "gpt-*", input_cents_per_unit: 150, output_cents_per_unit: 600, effective_from: Date.today - 1)
 
       payload = TraceBook::NormalizedInteraction.new(
         provider: "openai",
         model: "gpt-4o",
         project: "demo",
-        request_payload: { "messages" => [ { "content" => "Email me at user@example.com" } ] },
-        response_payload: { "content" => "Call (555) 123-4567" },
-        request_text: "Email me at user@example.com",
-        response_text: "Call (555) 123-4567",
+        request_payload: { "messages" => [ { "content" => "Hello world" } ] },
+        response_payload: { "content" => "Hi there" },
+        request_text: "Hello world",
+        response_text: "Hi there",
         input_tokens: 1200,
         output_tokens: 300,
         status: :success
@@ -41,8 +39,8 @@ module TraceBook
 
         assert_equal "openai", interaction.provider
         assert_equal "demo", interaction.project
-        assert_equal "Email me at [REDACTED]", interaction.request_text
-        assert_equal "Call [REDACTED]", interaction.response_text
+        assert_equal "Hello world", interaction.request_text
+        assert_equal "Hi there", interaction.response_text
         assert_equal 180, interaction.cost_input_cents
         assert_equal 180, interaction.cost_output_cents
         assert_equal 360, interaction.cost_total_cents
