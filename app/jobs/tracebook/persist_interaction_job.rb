@@ -93,11 +93,34 @@ module Tracebook
 
       ActiveRecord::Base.transaction do
         Interaction.create!(attributes).tap do |interaction|
-          interaction.actor = normalized.actor if normalized.actor
+          assign_actor(interaction, normalized)
           persist_payloads(interaction, normalized)
           interaction.save! if interaction.changed?
         end
       end
+    end
+
+    def assign_actor(interaction, normalized)
+      # Prefer deserialized actor from GlobalID
+      if normalized.actor_gid.present?
+        interaction.actor = deserialize_actor(normalized)
+      elsif normalized.actor_type.present? && normalized.actor_id.present?
+        # Use serialized type/id when no GlobalID
+        interaction.actor_type = normalized.actor_type
+        interaction.actor_id = normalized.actor_id
+      elsif normalized.actor
+        # Legacy: raw actor object (shouldn't happen with new flow, but backwards compatible)
+        interaction.actor = normalized.actor
+      end
+    end
+
+    def deserialize_actor(normalized)
+      return nil unless normalized.actor_gid.present?
+
+      GlobalID::Locator.locate(normalized.actor_gid)
+    rescue GlobalID::ParseError, ActiveRecord::RecordNotFound => e
+      Rails.logger.warn "TraceBook: Could not deserialize actor from #{normalized.actor_gid}: #{e.message}"
+      nil
     end
 
     def total_tokens(normalized)

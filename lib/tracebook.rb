@@ -183,14 +183,18 @@ module Tracebook
     #     latency_ms: 30000
     #   )
     def record!(**attributes)
+      # Build normalized interaction and apply redaction BEFORE job enqueue
+      # This ensures no raw PII ever enters the job queue (critical security fix)
       payload = build_normalized_interaction(attributes)
+      redacted_payload = apply_redaction(payload)
+
       result = Result.new(idempotency_key: attributes[:idempotency_key])
 
       if config.persist_async
-        PersistInteractionJob.perform_later(payload.to_h)
+        PersistInteractionJob.perform_later(redacted_payload.to_h)
         result
       else
-        interaction = PersistInteractionJob.perform_now(payload.to_h)
+        interaction = PersistInteractionJob.perform_now(redacted_payload.to_h)
         Result.new(interaction: interaction, idempotency_key: attributes[:idempotency_key])
       end
     rescue StandardError => error
@@ -208,6 +212,21 @@ module Tracebook
       return unless @configuration_finalized || config.finalized?
 
       raise ConfigurationError, "TraceBook configuration is already finalized"
+    end
+
+    def apply_redaction(normalized)
+      # Serialize actor BEFORE pipeline (deep_dup doesn't handle arbitrary objects well)
+      actor_data = serialize_actor(normalized.actor)
+
+      pipeline = RedactionPipeline.new(config: config)
+      redacted = pipeline.call(normalized)
+
+      # Return new normalized with serialized actor data
+      # Remove :actor (raw object) and :redaction_audit (not serializable by ActiveJob)
+      # redaction_audit is for call-time observability, not persistence
+      NormalizedInteraction.new(
+        **redacted.to_h.except(:actor, :redaction_audit).merge(actor_data)
+      )
     end
 
     def build_normalized_interaction(attributes)
