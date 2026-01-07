@@ -97,6 +97,23 @@ module Tracebook
     #     config.actor_display = ->(actor) { actor.full_name }
     attr_accessor :actor_display
 
+    # @!attribute [rw] llm_redactor
+    #   @return [Redactors::LLMBased, nil] Optional LLM-based redactor for advanced PII detection
+    #   When configured, can be used for async LLM redaction via {LLMRedactionJob}.
+    #   @example Configure with OpenAI
+    #     config.llm_redactor = Tracebook::Redactors::LLMBased.new(
+    #       provider: :openai,
+    #       model: "gpt-4o-mini",
+    #       mode: :sync,
+    #       on_failure: :log_and_continue
+    #     )
+    #   @example Configure with local Ollama (privacy-preserving)
+    #     config.llm_redactor = Tracebook::Redactors::LLMBased.new(
+    #       provider: :ollama,
+    #       model: "llama3.2"
+    #     )
+    attr_accessor :llm_redactor
+
     # @!attribute [r] enabled_patterns
     #   @return [Array<Symbol>] Pattern symbols enabled via redact DSL
     attr_reader :enabled_patterns
@@ -120,6 +137,7 @@ module Tracebook
       @auto_subscribe_active_agent = false
       @per_page = 100
       @actor_display = nil
+      @llm_redactor = nil
       @enabled_patterns = []
       @custom_patterns = []
     end
