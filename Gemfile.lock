@@ -138,7 +138,7 @@ GEM
       racc (~> 1.4)
     nokogiri (1.19.0-x86_64-linux-gnu)
       racc (~> 1.4)
-    pagy (43.2.2)
+    pagy (43.2.6)
       json
       yaml
     parallel (1.27.0)
