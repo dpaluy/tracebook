@@ -17,7 +17,7 @@ gem "rubocop-rails-omakase", require: false
 
 # YARD documentation generator
 gem "yard", "~> 0.9", require: false
-gem "kramdown", "~> 2.4", require: false
+gem "kramdown", "~> 2.5", require: false
 
 # Start debugger with binding.b [https://github.com/ruby/debug]
 # gem "debug", ">= 1.0.0"
