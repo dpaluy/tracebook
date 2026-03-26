@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-03-26
+
+### Breaking Changes
+
+Tracebook is now a layer on top of **RubyLLM** instead of a standalone interaction recorder. It reads from the host app's Chat and Message models (provided by RubyLLM's `acts_as_chat` / `acts_as_message`) and adds cost tracking and review workflow.
+
+**Removed tables:**
+- `tracebook_interactions` — RubyLLM's Message model stores conversation data
+- `tracebook_rollups_dailies` — aggregates computed live from messages
+
+**New tables:**
+- `tracebook_message_costs` — cost and latency per message (polymorphic join to host Message)
+- `tracebook_chat_reviews` — review state per chat (polymorphic join to host Chat)
+
+**Updated tables:**
+- `tracebook_comments` — FK changed from `interaction_id` to `chat_review_id`
+
+**Removed code:**
+- `Interaction`, `LlmSession`, `RollupDaily` models
+- `PersistInteractionJob`, `DailyRollupsJob`, `ExportJob`
+- `TraceBook.record!` API — replaced by `Tracebook.calculate_cost!(message, provider:, model:)`
+- `NormalizedInteraction`, `Mappers`, `RedactionPipeline`, `Result`
+- `Adapters::RubyLLM`, `Adapters::ActiveAgent` notification subscribers
+- `ActorsController`, `InteractionsController`, `ExportsController`
+- `/tracebook/actors/*` and `/tracebook/interactions/*` routes
+
+**New code:**
+- `MessageCost` model — stores cost per message
+- `ChatReview` model — stores review state per chat
+- `ChatsController` — dashboard at `/tracebook/chats`
+- `Tracebook.calculate_cost!` — calculates and stores cost for a message
+- `config.chat_class` / `config.message_class` — configure host app model names
+
+**Migration guide:**
+1. Run `bin/rails tracebook:install:migrations && bin/rails db:migrate`
+2. Replace `Tracebook.record!` calls with `Tracebook.calculate_cost!`
+3. Update `config/initializers/tracebook.rb` to set `chat_class` and `message_class`
+4. Mount the engine: `mount Tracebook::Engine => "/tracebook"`
+
+### Fixed
+
+- **Pricing Calculator**: `matching_rule` now correctly prefers the most specific glob pattern and most recent `effective_from` date.
+
 ## [0.1.1] - 2025-12-16
 
 ### Added
@@ -26,32 +69,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Core Engine**: Rails 8.1+ mountable engine with isolated namespace
-- **Provider Support**: Mappers for OpenAI, Anthropic, and Ollama APIs
-- **Adapters**: Integration adapters for ActiveAgent and RubyLLM libraries
 - **Recording API**: `TraceBook.record!` for capturing LLM interactions
-- **Configuration**: Flexible `TraceBook.config` with authorization hooks
-- **Models**:
-  - `Interaction` - Core model for storing LLM call data
-  - `PricingRule` - Cost calculation rules per model
-  - `RedactionRule` - Custom PII pattern definitions
-  - `RollupDaily` - Aggregated daily metrics
-- **PII Redaction**: Pre-persist redaction pipeline with built-in redactors:
-  - Email addresses
-  - Phone numbers
-  - Credit card PANs
+- **Models**: Interaction, PricingRule, RollupDaily
 - **Cost Tracking**: Pricing calculator with configurable rules per provider/model
-- **Background Jobs**:
-  - `PersistInteractionJob` - Async ingestion pipeline
-  - `DailyRollupsJob` - Nightly metric aggregation
-  - `ExportJob` - Async data export
-- **Web UI**: Turbo + Stimulus dashboard with:
-  - Interaction list with filtering (provider, model, date range, review state)
-  - Detail view with formatted request/response payloads
-  - Review workflow (pending → approved/flagged/rejected)
-  - KPI display (token counts, costs, latency)
-- **Export**: CSV and NDJSON export capabilities
-- **Normalized Schema**: Consistent data structure across all providers
-- **Test Suite**: Full MiniTest coverage for models, controllers, jobs, and lib
+- **Background Jobs**: PersistInteractionJob, DailyRollupsJob, ExportJob
+- **Web UI**: Dashboard with filtering, review workflow, KPI display
+- **Adapters**: Integration adapters for RubyLLM and ActiveAgent
+- **PII Redaction**: Pre-persist redaction pipeline
 
+[1.0.0]: https://github.com/dpaluy/tracebook/compare/v0.1.1...v1.0.0
 [0.1.1]: https://github.com/dpaluy/tracebook/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/dpaluy/tracebook/releases/tag/v0.1.0

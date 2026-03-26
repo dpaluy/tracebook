@@ -6,10 +6,10 @@ Gem::Specification.new do |spec|
   spec.authors     = [ "dpaluy" ]
   spec.email       = [ "dpaluy@users.noreply.github.com" ]
 
-  spec.summary     = "Rails engine for LLM interaction telemetry and review."
-  spec.description = "TraceBook provides a Rails engine for capturing, storing, and reviewing LLM API interactions " \
-                     "with built-in support for OpenAI, Anthropic, and Ollama. Features include PII redaction, " \
-                     "cost tracking, review workflows, and export capabilities."
+  spec.summary     = "Cost tracking and review dashboard for RubyLLM conversations."
+  spec.description = "Tracebook is a Rails engine that adds cost tracking, review workflows, and a dashboard UI " \
+                     "on top of RubyLLM's Chat and Message models. Features include per-message cost calculation " \
+                     "with configurable pricing rules, chat-level approval workflows, and a Hotwire-powered dashboard."
   spec.homepage    = "https://github.com/dpaluy/tracebook"
   spec.license     = "MIT"
   spec.required_ruby_version = ">= 3.4.0"
@@ -38,6 +38,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails", ">= 8.1.1"
   spec.add_dependency "turbo-rails", ">= 2.0.0"
   spec.add_dependency "stimulus-rails", ">= 1.3"
-  spec.add_dependency "csv", "~> 3.3"
   spec.add_dependency "pagy", ">= 43.0"
 end

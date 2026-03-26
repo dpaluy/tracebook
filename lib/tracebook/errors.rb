@@ -5,5 +5,3 @@ module Tracebook
 
   class ConfigurationError < Error; end
 end
-
-TraceBook = Tracebook unless defined?(TraceBook)

@@ -1,0 +1,77 @@
+<div class="tb-container">
+  <header class="tb-header">
+    <h1>TraceBook</h1>
+    <div class="tb-kpis">
+      <div class="tb-kpi">
+        <span>Chats</span>
+        <strong><%= number_with_delimiter(@kpis[:total_chats]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Messages</span>
+        <strong><%= number_with_delimiter(@kpis[:total_messages]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Cost</span>
+        <strong><%= cents_to_human(@kpis[:total_cost_cents]) %></strong>
+      </div>
+    </div>
+  </header>
+
+  <section class="tb-filters">
+    <%= form_with url: chats_path, method: :get, scope: :filters, class: "tb-filter-form" do |form| %>
+      <div class="tb-filter-row" style="display: flex; gap: 1rem; align-items: flex-end;">
+        <div class="tb-filter-field" style="flex: 1;">
+          <%= form.label :actor %>
+          <%= form.select :actor, options_for_select(@actors, @filters[:actor]), { include_blank: "All actors" }, style: "width: 100%;" %>
+        </div>
+        <div class="tb-filter-field" style="flex: 1;">
+          <%= form.label :model %>
+          <%= form.select :model, options_for_select(@models, @filters[:model]), { include_blank: "All models" }, style: "width: 100%;" %>
+        </div>
+        <div class="tb-filter-field" style="flex: 1;">
+          <%= form.label :review_state, "Review" %>
+          <%= form.select :review_state, options_for_select([["Pending", "pending"], ["Approved", "approved"], ["Flagged", "flagged"]], @filters[:review_state]), { include_blank: "All states" }, style: "width: 100%;" %>
+        </div>
+        <div class="tb-filter-actions" style="display: flex; gap: 0.5rem; align-items: center; white-space: nowrap; margin-left: auto;">
+          <%= form.submit "Apply" %>
+          <%= link_to "Reset", chats_path, class: "tb-link" %>
+        </div>
+      </div>
+    <% end %>
+  </section>
+
+  <section class="tb-table-wrapper">
+    <table class="tb-table">
+      <thead>
+        <tr>
+          <th>Chat</th>
+          <th>Actor</th>
+          <th>Model</th>
+          <th>Messages</th>
+          <th>Tokens</th>
+          <th>Cost</th>
+          <th>Review</th>
+          <th>Last Activity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @chats.each do |chat| %>
+          <% stats = @chat_stats[chat.id] || {} %>
+          <tr>
+            <td data-label="Chat"><%= link_to "##{chat.id}", chat_path(chat) %></td>
+            <td data-label="Actor"><%= actor_name(chat) %></td>
+            <td data-label="Model"><%= chat.try(:model)&.try(:model_id) || "—" %></td>
+            <td data-label="Messages"><%= stats[:message_count] || 0 %></td>
+            <td data-label="Tokens"><%= number_with_delimiter(stats[:total_input] || 0) %> / <%= number_with_delimiter(stats[:total_output] || 0) %></td>
+            <td data-label="Cost"><%= cents_to_human(stats[:total_cost_cents] || 0) %></td>
+            <td data-label="Review"><%= review_badge(stats[:review_state] || "pending") %></td>
+            <td data-label="Last Activity"><%= chat.updated_at.strftime("%Y-%m-%d %H:%M") %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <nav class="tb-pagination" aria-label="Chats pagination">
+      <%== @pagy.series_nav %>
+    </nav>
+  </section>
+</div>

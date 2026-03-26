@@ -1,10 +1,16 @@
 # frozen_string_literal: true
 
-TraceBook.configure do |config|
-  # config.project_name = "My App"
+Tracebook.configure do |config|
+  # Class names for your RubyLLM models (must use acts_as_chat / acts_as_message)
+  # config.chat_class = "Chat"
+  # config.message_class = "Message"
 
-  config.persist_async = Rails.env.production?
+  # Currency for cost calculations
+  # config.default_currency = "USD"
 
-  # config.auto_subscribe_ruby_llm = true
-  # config.auto_subscribe_active_agent = true
+  # How to display the actor (user) in the dashboard
+  # config.actor_display = ->(actor) { actor.try(:name) || actor.try(:email) }
+
+  # Items per page in the dashboard
+  # config.per_page = 25
 end

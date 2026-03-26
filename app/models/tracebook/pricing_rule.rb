@@ -3,14 +3,14 @@
 module Tracebook
   # Pricing rule for calculating LLM interaction costs.
   #
-  # Defines cost per 1000 tokens for a provider/model pattern. Supports
-  # glob patterns for matching multiple models and date-based effective periods.
+  # Defines cost in cents per 1,000,000 tokens for a provider/model pattern.
+  # Supports glob patterns for matching multiple models and date-based effective periods.
   #
   # ## Fields
   # - `provider` - Provider name (e.g., "openai", "anthropic")
   # - `model_glob` - Glob pattern for matching models (e.g., "gpt-4o*", "claude-3-5-*")
-  # - `input_per_1k` - Cost per 1000 input tokens
-  # - `output_per_1k` - Cost per 1000 output tokens
+  # - `input_cents_per_unit` - Cost in cents per 1M input tokens (decimal)
+  # - `output_cents_per_unit` - Cost in cents per 1M output tokens (decimal)
   # - `currency` - Currency code (e.g., "USD")
   # - `effective_from` - Date this pricing takes effect
   # - `effective_to` - Optional end date for this pricing
@@ -19,8 +19,8 @@ module Tracebook
   #   PricingRule.create!(
   #     provider: "openai",
   #     model_glob: "gpt-4o",
-  #     input_per_1k: 2.50,
-  #     output_per_1k: 10.00,
+  #     input_cents_per_unit: 250,    # $2.50/1M tokens
+  #     output_cents_per_unit: 1000,  # $10.00/1M tokens
   #     currency: "USD",
   #     effective_from: Date.new(2024, 8, 6)
   #   )
@@ -80,5 +80,3 @@ module Tracebook
     end
   end
 end
-
-TraceBook = Tracebook unless defined?(TraceBook)

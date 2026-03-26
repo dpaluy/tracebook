@@ -8,30 +8,25 @@ class TraceBookConfigTest < ActiveSupport::TestCase
   test "provides default configuration values" do
     config = TraceBook.config
 
-    assert_equal true, config.persist_async
-    assert_equal 64 * 1024, config.inline_payload_bytes
+    assert_equal "Chat", config.chat_class
+    assert_equal "Message", config.message_class
     assert_equal "USD", config.default_currency
-    assert_equal [ :csv, :ndjson ], config.export_formats
-    assert_equal false, config.auto_subscribe_ruby_llm
-    assert_equal false, config.auto_subscribe_active_agent
-    assert_kind_of Array, config.redactors
-    assert_equal 0, config.redactors.length  # No default redactors until new Pattern system is built
-    assert_equal [], config.custom_redactors
+    assert_equal 25, config.per_page
+    assert_nil config.actor_display
   end
 
   test "configure yields mutable config then freezes it" do
     TraceBook.configure do |config|
-      config.project_name = "my_app"
-      config.inline_payload_bytes = 32 * 1024
-      config.custom_redactors = [ ->(payload) { payload } ]
+      config.chat_class = "Conversation"
+      config.message_class = "ChatMessage"
+      config.per_page = 50
     end
 
     config = TraceBook.config
-    assert_equal "my_app", config.project_name
-    assert_equal 32 * 1024, config.inline_payload_bytes
+    assert_equal "Conversation", config.chat_class
+    assert_equal "ChatMessage", config.message_class
+    assert_equal 50, config.per_page
     assert config.frozen?
-    assert config.redactors.frozen?
-    assert config.custom_redactors.frozen?
   end
 
   test "reconfiguring after freeze raises configuration error" do

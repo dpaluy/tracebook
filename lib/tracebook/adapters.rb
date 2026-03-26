@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "adapters/ruby_llm"
-require_relative "adapters/active_agent"
-
-TraceBook = Tracebook unless defined?(TraceBook)
+module Tracebook
+  module Adapters
+    autoload :RubyLLM, "tracebook/adapters/ruby_llm"
+  end
+end

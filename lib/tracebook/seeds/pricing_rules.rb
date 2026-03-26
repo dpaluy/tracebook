@@ -3,7 +3,7 @@
 module Tracebook
   module Seeds
     module PricingRules
-      # All prices are in cents per 1000 tokens.
+      # All prices are in cents per 1,000,000 tokens.
       # effective_from is set to provider's approximate release date.
       DEFAULTS = [
         # Gemini (Google)

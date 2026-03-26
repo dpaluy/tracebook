@@ -7,11 +7,7 @@ module Tracebook
     class InstallGenerator < Rails::Generators::Base
       source_root File.expand_path("templates", __dir__)
 
-      desc "Install TraceBook: copy migrations and create initializer"
-
-      def copy_migrations
-        rake "tracebook:install:migrations"
-      end
+      desc "Install Tracebook: create initializer"
 
       def create_initializer
         template "initializer.rb.tt", "config/initializers/tracebook.rb"
@@ -19,17 +15,17 @@ module Tracebook
 
       def show_next_steps
         say ""
-        say "TraceBook installed!", :green
+        say "Tracebook installed!", :green
         say ""
         say "Next steps:"
         say "  1. Run migrations:  bin/rails db:migrate"
         say "  2. Mount the engine in config/routes.rb:"
         say ""
-        say "     mount TraceBook::Engine => \"/tracebook\""
+        say "     mount Tracebook::Engine => \"/tracebook\""
         say ""
-        say "  3. Configure authorization in config/initializers/tracebook.rb"
-        say "  4. Set up ActiveRecord encryption (see README)"
-        say "  5. Seed default pricing:  bin/rails tracebook:seed_pricing"
+        say "  3. Seed default pricing:  bin/rails tracebook:seed_pricing"
+        say "  4. Call Tracebook.calculate_cost! after LLM responses"
+        say "     (see README for integration examples)"
         say ""
       end
     end

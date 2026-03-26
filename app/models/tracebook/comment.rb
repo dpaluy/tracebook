@@ -4,7 +4,7 @@ module Tracebook
   class Comment < ApplicationRecord
     self.table_name = "tracebook_comments"
 
-    belongs_to :interaction, class_name: "Tracebook::Interaction"
+    belongs_to :chat_review, class_name: "Tracebook::ChatReview"
 
     validates :author, presence: true
     validates :body, presence: true

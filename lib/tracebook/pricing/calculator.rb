@@ -24,16 +24,21 @@ module Tracebook
       def matching_rule(provider, model, occurred_at)
         Tracebook::PricingRule.where(provider: provider).select do |rule|
           rule.matches_model?(model) && rule.active_on?(occurred_at.to_date)
-        end.min_by(&:effective_from)
+        end.max_by { |rule| [ glob_specificity(rule.model_glob), rule.effective_from ] }
       end
 
-      def cost_for(cents_per_unit, tokens)
-        return 0 if cents_per_unit.to_i <= 0 || tokens.to_i <= 0
+      def glob_specificity(glob)
+        glob.delete("*?").length
+      end
 
-        (tokens.to_i / 1000.0 * cents_per_unit.to_i).round
+      # Calculates cost in cents.
+      # cents_per_unit is cents per 1M tokens (matching the pricing rule storage).
+      # Example: $2.50/1M = 250 cents/1M. 1000 tokens => 1000 * 250 / 1_000_000 = 0.25 cents.
+      def cost_for(cents_per_million, tokens)
+        return 0 if cents_per_million.to_d <= 0 || tokens.to_i <= 0
+
+        (tokens.to_i * cents_per_million.to_d / 1_000_000).round(4)
       end
     end
   end
 end
-
-TraceBook = Tracebook unless defined?(TraceBook)

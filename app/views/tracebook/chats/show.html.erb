@@ -1,0 +1,94 @@
+<div class="tb-container">
+  <header class="tb-header">
+    <h1>TraceBook</h1>
+    <div class="tb-breadcrumb">
+      <%= link_to "&larr; All Chats".html_safe, chats_path, class: "tb-back-link" %>
+      <span class="tb-muted">/ Chat #<%= @chat.id %> — <%= actor_name(@chat) %></span>
+      <%= link_to "Export JSON", chat_path(@chat, format: :json), class: "tb-export-btn" %>
+    </div>
+    <div class="tb-kpis">
+      <div class="tb-kpi">
+        <span>Messages</span>
+        <strong><%= @kpis[:message_count] %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Input Tokens</span>
+        <strong><%= number_with_delimiter(@kpis[:total_input_tokens]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Output Tokens</span>
+        <strong><%= number_with_delimiter(@kpis[:total_output_tokens]) %></strong>
+      </div>
+      <div class="tb-kpi">
+        <span>Cost</span>
+        <strong><%= cents_to_human(@kpis[:total_cost_cents]) %></strong>
+      </div>
+    </div>
+  </header>
+
+  <section class="tb-table-wrapper">
+    <h2 class="tb-section-title">Conversation</h2>
+    <div class="tb-messages">
+      <% @messages.each do |message| %>
+        <div class="tb-message tb-message-<%= message.role %>">
+          <div class="tb-message-header">
+            <strong><%= message.role.capitalize %></strong>
+            <span class="tb-muted"><%= message.created_at.strftime("%H:%M:%S") %></span>
+            <% if message.role == "assistant" %>
+              <span class="tb-muted">
+                <%= message.input_tokens %> / <%= message.output_tokens %> tokens
+                <% cost = @costs_by_message[message.id] %>
+                <% if cost %>
+                  &middot; <%= cents_to_human(cost.cost_total_cents) %>
+                <% end %>
+              </span>
+            <% end %>
+          </div>
+          <div class="tb-message-content">
+            <%= simple_format(message.content.to_s.truncate(2000)) %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="tb-table-wrapper">
+    <h2 class="tb-section-title">Review</h2>
+
+    <% current_state = @review.persisted? ? @review.review_state : "pending" %>
+    <div class="tb-review-bar">
+      <div class="tb-review-status">
+        <span class="tb-review-status-label">Status</span>
+        <%= review_badge(current_state) %>
+      </div>
+      <%= form_with url: review_chat_path(@chat), method: :post do |f| %>
+        <div class="tb-review-actions">
+          <button type="submit" name="review_state" value="approved" class="tb-review-btn tb-review-btn-approved">Approve</button>
+          <button type="submit" name="review_state" value="flagged" class="tb-review-btn tb-review-btn-flagged">Flag</button>
+          <button type="submit" name="review_state" value="pending" class="tb-review-btn tb-review-btn-pending">Reset</button>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @comments.any? %>
+      <div class="tb-review-comments">
+        <% @comments.each do |comment| %>
+          <div class="tb-review-comment">
+            <div class="tb-review-comment-meta">
+              <strong class="tb-review-comment-author"><%= comment.author %></strong>
+              <span class="tb-muted"><%= comment.created_at.strftime("%Y-%m-%d %H:%M") %></span>
+            </div>
+            <p class="tb-review-comment-body"><%= comment.body %></p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%= form_with url: chat_comments_path(@chat), method: :post, scope: :comment do |f| %>
+      <div class="tb-review-compose">
+        <%= f.text_area :body, placeholder: "Add a comment...", rows: 2, required: true, class: "tb-review-textarea" %>
+        <%= f.submit "Comment", class: "tb-review-submit" %>
+      </div>
+    <% end %>
+  </section>
+</div>
