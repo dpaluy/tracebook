@@ -27,6 +27,7 @@ CLAUDE.md
 .claude/
 .worktrees/
 .repoprompt/
+.omx/
 docs/
 tracebook-worktrees/
 .beads/

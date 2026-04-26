@@ -129,6 +129,55 @@ Tracebook.configure do |config|
 end
 ```
 
+### OpenAI Privacy Filter
+
+Tracebook can optionally call a local [OpenAI Privacy Filter](https://github.com/openai/privacy-filter) sidecar after regex and custom redactors. It is off by default.
+
+```ruby
+Tracebook.configure do |config|
+  config.redact :pii, :api_keys, :auth
+
+  config.openai_privacy_filter.enabled = true
+  config.openai_privacy_filter.endpoint = "http://127.0.0.1:8765"
+  config.openai_privacy_filter.timeout = 0.5
+  config.openai_privacy_filter.failure_mode = :fallback
+end
+```
+
+The endpoint must be `localhost` or a loopback IP address. Tracebook rejects non-loopback endpoints so raw text is not accidentally sent to a hosted service.
+
+The local sidecar should accept `POST /redact` with:
+
+```json
+{ "text": "Alice was born on 1990-01-02." }
+```
+
+and return OpenAI Privacy Filter JSON with `detected_spans`:
+
+```json
+{
+  "detected_spans": [
+    { "label": "private_person", "start": 0, "end": 5 },
+    { "label": "private_date", "start": 18, "end": 28 }
+  ]
+}
+```
+
+Tracebook applies its own stable placeholders instead of trusting model-formatted output:
+
+| Privacy Filter label | Placeholder |
+|----------------------|-------------|
+| `account_number` | `[ACCOUNT_NUMBER]` |
+| `private_address` | `[ADDRESS]` |
+| `private_email` | `[EMAIL]` |
+| `private_person` | `[PERSON]` |
+| `private_phone` | `[PHONE]` |
+| `private_url` | `[URL]` |
+| `private_date` | `[DATE]` |
+| `secret` | `[SECRET]` |
+
+If the local sidecar is down, times out, or returns an invalid response, Tracebook returns the text after regex/custom redaction. It does not raise by default. To raise instead, set `config.openai_privacy_filter.failure_mode = :raise`.
+
 ### Using Redaction
 
 ```ruby
@@ -141,9 +190,7 @@ content = Tracebook.redact(user_input)
 chat.ask(content)
 ```
 
-### Planned: LLM-Based Redaction
-
-For context-sensitive PII that regex can't catch (e.g. "my social is seven eight two three three three two"), a future version will support LLM-based redaction using a local model (e.g., Ollama) to detect PII in natural language before persistence.
+Enabling OpenAI Privacy Filter only changes what `Tracebook.redact(...)` does. Tracebook does not automatically redact saved messages, dashboard views, or JSON exports.
 
 ## Tracebook Tables
 

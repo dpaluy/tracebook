@@ -2,6 +2,44 @@
 
 module Tracebook
   class Config
+    class OpenAiPrivacyFilterConfig
+      attr_accessor :enabled, :endpoint, :timeout, :failure_mode
+      attr_reader :label_map
+
+      def initialize
+        @enabled = false
+        @endpoint = Redaction::OpenAiPrivacyFilter::DEFAULT_ENDPOINT
+        @timeout = Redaction::OpenAiPrivacyFilter::DEFAULT_TIMEOUT
+        @failure_mode = Redaction::OpenAiPrivacyFilter::DEFAULT_FAILURE_MODE
+        @label_map = Redaction::OpenAiPrivacyFilter::DEFAULT_LABEL_MAP.dup
+      end
+
+      def enabled?
+        enabled == true
+      end
+
+      def label_map=(label_map)
+        @label_map = normalize_label_map(label_map)
+      end
+
+      def finalize!
+        validate! if enabled?
+        label_map.freeze
+        freeze
+      end
+
+      private
+
+      def validate!
+        Redaction::OpenAiPrivacyFilter::Client.validate_endpoint!(endpoint)
+        Redaction::OpenAiPrivacyFilter.validate_failure_mode!(failure_mode)
+      end
+
+      def normalize_label_map(label_map)
+        label_map.to_h.transform_keys(&:to_s).transform_values(&:to_s)
+      end
+    end
+
     # @return [String] class name of the host app's Chat model (default: "Chat")
     attr_accessor :chat_class
 
@@ -20,6 +58,9 @@ module Tracebook
     # @return [Array<Proc>] custom redaction callables
     attr_reader :custom_redactors
 
+    # @return [OpenAiPrivacyFilterConfig] model-backed redaction config
+    attr_reader :openai_privacy_filter
+
     def initialize
       @chat_class = "Chat"
       @message_class = "Message"
@@ -28,6 +69,7 @@ module Tracebook
       @actor_display = nil
       @redaction_patterns = []
       @custom_redactors = []
+      @openai_privacy_filter = OpenAiPrivacyFilterConfig.new
     end
 
     # Enable named redaction patterns.
@@ -87,6 +129,7 @@ module Tracebook
 
       @redaction_patterns.freeze
       @custom_redactors.freeze
+      @openai_privacy_filter.finalize!
       @redaction_pipeline = redaction_pipeline
       @finalized = true
       freeze
@@ -108,7 +151,25 @@ module Tracebook
       patterns = @redaction_patterns.map do |p|
         p.is_a?(Symbol) ? Redaction::PATTERNS.fetch(p) : p
       end
-      Redaction::Pipeline.new(patterns: patterns, custom_redactors: @custom_redactors)
+      Redaction::Pipeline.new(
+        patterns: patterns,
+        custom_redactors: configured_redactors
+      )
+    end
+
+    def configured_redactors
+      redactors = @custom_redactors.dup
+      redactors << openai_privacy_filter_redactor if openai_privacy_filter.enabled?
+      redactors
+    end
+
+    def openai_privacy_filter_redactor
+      Redaction::OpenAiPrivacyFilter.new(
+        endpoint: openai_privacy_filter.endpoint,
+        timeout: openai_privacy_filter.timeout,
+        failure_mode: openai_privacy_filter.failure_mode,
+        label_map: openai_privacy_filter.label_map
+      )
     end
   end
 end

@@ -45,6 +45,27 @@ class RedactionConfigTest < ActiveSupport::TestCase
     assert_equal "The [SECRET] is safe", pipeline.call("The secret is safe")
   end
 
+  test "openai privacy filter is disabled by default" do
+    Tracebook.configure do |config|
+      config.redact :email
+    end
+
+    pipeline = Tracebook.config.redaction_pipeline
+    assert_empty pipeline.custom_redactors
+  end
+
+  test "openai privacy filter is appended when enabled" do
+    Tracebook.configure do |config|
+      config.custom_redactors << ->(text) { text.gsub(/secret/i, "[SECRET]") }
+      config.openai_privacy_filter.enabled = true
+    end
+
+    redactors = Tracebook.config.redaction_pipeline.custom_redactors
+    assert_equal 2, redactors.size
+    assert_instance_of Proc, redactors.first
+    assert_instance_of Tracebook::Redaction::OpenAiPrivacyFilter, redactors.second
+  end
+
   test "Tracebook.redact uses configured pipeline" do
     Tracebook.configure do |config|
       config.redact :email
