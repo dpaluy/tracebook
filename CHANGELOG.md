@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- **Chat-scoped redaction memory**: `Tracebook.redact(text, scope:)` can now propagate exact model-detected private substrings within a conversation/session and cache scoped redaction results in-process.
+
+### Changed
+
+- **Dashboard redaction**: Chat HTML rendering and chat JSON export now call `Tracebook.redact(message.content, scope: chat.id)` so configured redaction applies consistently in the dashboard.
+
 ## [1.1.0] - 2026-04-26
 
 ### Added

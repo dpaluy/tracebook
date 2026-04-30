@@ -4,6 +4,8 @@ require "json"
 require "net/http"
 require "uri"
 require "ipaddr"
+require "tracebook/redaction/scoped_memory"
+require "tracebook/redaction/scoped_result_cache"
 
 module Tracebook
   module Redaction
@@ -12,6 +14,23 @@ module Tracebook
       DEFAULT_TIMEOUT = 0.5
       DEFAULT_FAILURE_MODE = :fallback
       FAILURE_MODES = %i[fallback raise].freeze
+
+      class ClientError < StandardError; end
+
+      CLIENT_FAILURES = [
+        ClientError,
+        JSON::ParserError,
+        ArgumentError,
+        TypeError,
+        IOError,
+        SystemCallError,
+        SocketError,
+        Timeout::Error,
+        Net::OpenTimeout,
+        Net::ReadTimeout,
+        EOFError,
+        URI::Error
+      ].freeze
       DEFAULT_LABEL_MAP = {
         "account_number" => "[ACCOUNT_NUMBER]",
         "private_address" => "[ADDRESS]",
@@ -23,11 +42,13 @@ module Tracebook
         "secret" => "[SECRET]"
       }.freeze
 
-      class ClientError < StandardError; end
-
       Span = Data.define(:start, :end, :label)
 
       attr_reader :client, :failure_mode, :label_map
+
+      def self.normalize_label_map(label_map)
+        label_map.to_h.transform_keys(&:to_s).transform_values(&:to_s)
+      end
 
       def self.validate_failure_mode!(failure_mode)
         return if FAILURE_MODES.include?(failure_mode.to_sym)
@@ -42,27 +63,43 @@ module Tracebook
         timeout: DEFAULT_TIMEOUT,
         failure_mode: DEFAULT_FAILURE_MODE,
         label_map: DEFAULT_LABEL_MAP,
-        client: nil
+        client: nil,
+        scoped_memory: ScopedMemory.new,
+        scoped_result_cache: ScopedResultCache.new
       )
         @client = client || Client.new(endpoint: endpoint, timeout: timeout)
         self.class.validate_failure_mode!(failure_mode)
         @failure_mode = failure_mode.to_sym
-        @label_map = DEFAULT_LABEL_MAP.merge(normalize_label_map(label_map))
+        @label_map = DEFAULT_LABEL_MAP.merge(self.class.normalize_label_map(label_map))
+        @scoped_memory = scoped_memory
+        @scoped_result_cache = scoped_result_cache
       end
 
-      def call(text)
+      def call(text, scope: nil)
         return text unless text.is_a?(String)
 
-        spans = spans_from(client.detect(text))
-        return text if spans.empty?
+        return redact_without_scope(text) if scope.nil?
 
-        apply_spans(text, spans)
-      rescue ClientError, JSON::ParserError, ArgumentError, TypeError, IOError, SystemCallError, SocketError,
-        Timeout::Error, Net::OpenTimeout, Net::ReadTimeout, EOFError, URI::Error
-        handle_failure(text, $!)
+        cached = scoped_result_cache.read(scope, text)
+        return cached unless cached.nil?
+
+        scoped_text = apply_scoped_memory(text, scope)
+        spans = selected_spans(scoped_text, spans_from(client.detect(scoped_text)))
+        scoped_result_cache.invalidate_scope(scope) if record_spans(scoped_text, spans, scope)
+        scoped_result_cache.write(scope, text, replace_spans(scoped_text, spans))
+      rescue *CLIENT_FAILURES
+        handle_failure(defined?(scoped_text) ? scoped_text : text, $!)
       end
 
       private
+
+      attr_reader :scoped_memory, :scoped_result_cache
+
+      def redact_without_scope(text)
+        replace_spans(text, selected_spans(text, spans_from(client.detect(text))))
+      rescue *CLIENT_FAILURES
+        handle_failure(text, $!)
+      end
 
       def handle_failure(text, error)
         raise error if failure_mode == :raise
@@ -100,13 +137,16 @@ module Tracebook
         nil
       end
 
-      def apply_spans(text, spans)
-        selected_spans = merge_adjacent_same_label_spans(select_non_overlapping_spans(text, spans))
-        return text if selected_spans.empty?
+      def replace_spans(text, spans)
+        return text if spans.empty?
 
-        selected_spans.reverse_each.with_object(text.dup) do |span, result|
+        spans.reverse_each.with_object(text.dup) do |span, result|
           result[span.start...span.end] = label_map.fetch(span.label)
         end
+      end
+
+      def selected_spans(text, spans)
+        merge_adjacent_same_label_spans(select_non_overlapping_spans(text, spans))
       end
 
       def merge_adjacent_same_label_spans(spans)
@@ -118,6 +158,59 @@ module Tracebook
             merged << span
           end
         end
+      end
+
+      def apply_scoped_memory(text, scope)
+        matches = select_scoped_memory_matches(text, scoped_memory.entries_for(scope))
+        replace_spans(text, matches)
+      end
+
+      def record_spans(text, spans, scope)
+        changed = false
+
+        spans.each do |span|
+          changed = true if scoped_memory.record(scope, text[span.start...span.end], span.label)
+        end
+
+        changed
+      end
+
+      def select_scoped_memory_matches(text, entries)
+        candidates = entries.flat_map do |substring, label|
+          scoped_memory_matches(text, substring, label)
+        end
+
+        select_longest_non_overlapping_spans(candidates)
+      end
+
+      def scoped_memory_matches(text, substring, label)
+        matches = []
+        start_at = 0
+
+        while (start_offset = text.index(substring, start_at))
+          matches << Span.new(start_offset, start_offset + substring.length, label)
+          start_at = start_offset + substring.length
+        end
+
+        matches
+      end
+
+      def select_longest_non_overlapping_spans(spans)
+        selected = []
+
+        spans
+          .sort_by { |span| [ -(span.end - span.start), span.start, span.label ] }
+          .each do |span|
+            next if selected.any? { |selected_span| spans_overlap?(selected_span, span) }
+
+            selected << span
+          end
+
+        selected.sort_by(&:start)
+      end
+
+      def spans_overlap?(first, second)
+        first.start < second.end && second.start < first.end
       end
 
       def select_non_overlapping_spans(text, spans)
@@ -141,10 +234,6 @@ module Tracebook
 
       def fetch_value(hash, key)
         hash[key] || hash[key.to_sym]
-      end
-
-      def normalize_label_map(label_map)
-        label_map.to_h.transform_keys(&:to_s).transform_values(&:to_s)
       end
 
       class Client

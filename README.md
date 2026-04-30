@@ -178,6 +178,8 @@ Tracebook applies its own stable placeholders instead of trusting model-formatte
 
 If the local sidecar is down, times out, or returns an invalid response, Tracebook returns the text after regex/custom redaction. It does not raise by default. To raise instead, set `config.openai_privacy_filter.failure_mode = :raise`.
 
+When a caller passes `scope:`, OpenAI Privacy Filter redaction keeps process-local memory for that conversation/session. If the model flags a private substring in one scoped message, later messages in the same scope redact that exact substring before the sidecar sees the text. Scoped results are also cached in-process, so rendering the same scope + text repeatedly does not call the sidecar repeatedly; when a scope learns a new private substring, cached results for that scope are invalidated.
+
 ### Using Redaction
 
 ```ruby
@@ -188,9 +190,12 @@ Tracebook.redact("Email user@test.com or call 555-123-4567")
 # Use in your application before saving messages
 content = Tracebook.redact(user_input)
 chat.ask(content)
+
+# Use a scope to propagate model-detected private substrings within a conversation
+Tracebook.redact(message.content, scope: chat.id)
 ```
 
-Enabling OpenAI Privacy Filter only changes what `Tracebook.redact(...)` does. Tracebook does not automatically redact saved messages, dashboard views, or JSON exports.
+Enabling OpenAI Privacy Filter only changes what `Tracebook.redact(...)` does. Tracebook does not automatically redact saved messages or RubyLLM callbacks. The dashboard chat view and chat JSON export call `Tracebook.redact(message.content, scope: chat.id)` at render/export time.
 
 ## Tracebook Tables
 

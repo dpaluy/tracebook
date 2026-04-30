@@ -14,8 +14,8 @@ Tracebook.configure do |config|
   # Items per page in the dashboard
   # config.per_page = 25
 
-  # Optional redaction patterns. Redaction only runs when your app explicitly
-  # calls Tracebook.redact(text).
+  # Optional regex/custom redaction patterns. Redaction only runs when your app
+  # explicitly calls Tracebook.redact(text).
   # config.redact :pii, :api_keys, :auth
 
   # Optional local OpenAI Privacy Filter sidecar. Disabled by default.

@@ -36,7 +36,7 @@ module Tracebook
       end
 
       def normalize_label_map(label_map)
-        label_map.to_h.transform_keys(&:to_s).transform_values(&:to_s)
+        Redaction::OpenAiPrivacyFilter.normalize_label_map(label_map)
       end
     end
 

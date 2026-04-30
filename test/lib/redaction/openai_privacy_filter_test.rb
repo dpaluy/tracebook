@@ -12,6 +12,23 @@ module Tracebook
         end
       end
 
+      class RecordingClient
+        attr_reader :texts
+
+        def initialize(*responses)
+          @responses = responses
+          @texts = []
+        end
+
+        def detect(text)
+          texts << text
+          response = @responses.shift || {}
+          raise response if response.is_a?(Exception)
+
+          response
+        end
+      end
+
       class RaisingClient
         def detect(_text)
           raise OpenAiPrivacyFilter::ClientError, "unavailable"
@@ -76,6 +93,128 @@ module Tracebook
         )
 
         assert_equal "[PERSON]", redactor.call("Alice Smith")
+      end
+
+      test "merges adjacent spans with the same label into one placeholder" do
+        redactor = OpenAiPrivacyFilter.new(
+          client: FakeClient.new({
+            "detected_spans" => [
+              { "start" => 0, "end" => 5, "label" => "private_person" },
+              { "start" => 5, "end" => 10, "label" => "private_person" }
+            ]
+          })
+        )
+
+        assert_equal "[PERSON]", redactor.call("AliceSmith")
+      end
+
+      test "propagates detected scoped substrings to later messages" do
+        address = "12822 Majestic Oaks Dr"
+        first_message = "I live at #{address}"
+        first_start = first_message.index(address)
+        client = RecordingClient.new(
+          {
+            "detected_spans" => [
+              { "start" => first_start, "end" => first_start + address.length, "label" => "private_address" }
+            ]
+          },
+          { "detected_spans" => [] }
+        )
+        redactor = OpenAiPrivacyFilter.new(client: client)
+
+        assert_equal "I live at [ADDRESS]", redactor.call(first_message, scope: "chat-1")
+        assert_equal "Nearest hospital to [ADDRESS]",
+          redactor.call("Nearest hospital to #{address}", scope: "chat-1")
+        assert_equal [
+          first_message,
+          "Nearest hospital to [ADDRESS]"
+        ], client.texts
+      end
+
+      test "does not propagate scoped substrings across scopes" do
+        client = RecordingClient.new(
+          {
+            "detected_spans" => [
+              { "start" => 0, "end" => 5, "label" => "private_person" }
+            ]
+          },
+          { "detected_spans" => [] }
+        )
+        redactor = OpenAiPrivacyFilter.new(client: client)
+
+        assert_equal "[PERSON]", redactor.call("Alice", scope: "chat-1")
+        assert_equal "Alice", redactor.call("Alice", scope: "chat-2")
+      end
+
+      test "caches scoped redaction results by scope and original text" do
+        client = RecordingClient.new(
+          {
+            "detected_spans" => [
+              { "start" => 0, "end" => 5, "label" => "private_person" }
+            ]
+          }
+        )
+        redactor = OpenAiPrivacyFilter.new(client: client)
+
+        assert_equal "[PERSON]", redactor.call("Alice", scope: "chat-1")
+        assert_equal "[PERSON]", redactor.call("Alice", scope: "chat-1")
+        assert_equal [ "Alice" ], client.texts
+      end
+
+      test "invalidates cached scoped results when new private substrings are recorded" do
+        address = "12822 Majestic Oaks Dr"
+        assistant_message = "Nearest hospital to #{address}"
+        user_message = "I live at #{address}"
+        user_start = user_message.index(address)
+        client = RecordingClient.new(
+          { "detected_spans" => [] },
+          {
+            "detected_spans" => [
+              { "start" => user_start, "end" => user_start + address.length, "label" => "private_address" }
+            ]
+          },
+          { "detected_spans" => [] }
+        )
+        redactor = OpenAiPrivacyFilter.new(client: client)
+
+        assert_equal assistant_message, redactor.call(assistant_message, scope: "chat-1")
+        assert_equal "I live at [ADDRESS]", redactor.call(user_message, scope: "chat-1")
+        assert_equal "Nearest hospital to [ADDRESS]", redactor.call(assistant_message, scope: "chat-1")
+        assert_equal [
+          assistant_message,
+          user_message,
+          "Nearest hospital to [ADDRESS]"
+        ], client.texts
+      end
+
+      test "applies the longest remembered scoped substring first" do
+        full_address = "12822 Majestic Oaks Dr, Austin, TX 78732"
+        redactor = OpenAiPrivacyFilter.new(client: FakeClient.new({ "detected_spans" => [] }))
+        scoped_memory = redactor.send(:scoped_memory)
+        scoped_memory.record("chat-1", "12822 Majestic Oaks Dr", "private_address")
+        scoped_memory.record("chat-1", full_address, "private_address")
+
+        assert_equal "Nearest hospital to [ADDRESS]",
+          redactor.call("Nearest hospital to #{full_address}", scope: "chat-1")
+      end
+
+      test "scoped sidecar failures keep memory redactions but are not cached" do
+        address = "12822 Majestic Oaks Dr"
+        client = RecordingClient.new(
+          OpenAiPrivacyFilter::ClientError.new("unavailable"),
+          { "detected_spans" => [] }
+        )
+        redactor = OpenAiPrivacyFilter.new(client: client)
+        redactor.send(:scoped_memory).record("chat-1", address, "private_address")
+
+        assert_equal "Nearest hospital to [ADDRESS]",
+          redactor.call("Nearest hospital to #{address}", scope: "chat-1")
+        assert_equal "Nearest hospital to [ADDRESS]",
+          redactor.call("Nearest hospital to #{address}", scope: "chat-1")
+        assert_equal [
+          "Nearest hospital to [ADDRESS]",
+          "Nearest hospital to [ADDRESS]"
+        ], client.texts
       end
 
       test "returns input text when sidecar is unavailable" do

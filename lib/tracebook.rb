@@ -4,6 +4,8 @@ require "tracebook/engine"
 require "tracebook/errors"
 require "tracebook/redaction/pattern"
 require "tracebook/redaction/pipeline"
+require "tracebook/redaction/scoped_memory"
+require "tracebook/redaction/scoped_result_cache"
 require "tracebook/redaction/openai_privacy_filter"
 require "tracebook/config"
 require "tracebook/pricing"
@@ -48,9 +50,10 @@ module Tracebook
     # Redact PII from text using configured patterns and custom redactors.
     #
     # @param text [String] the text to redact
+    # @param scope [Object, nil] optional conversation/session scope for cross-message memory
     # @return [String] redacted text
-    def redact(text)
-      config.redaction_pipeline.call(text)
+    def redact(text, scope: nil)
+      config.redaction_pipeline.call(text, scope: scope)
     end
 
     # Calculate and store cost for a message.
