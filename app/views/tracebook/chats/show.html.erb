@@ -45,7 +45,7 @@
             <% end %>
           </div>
           <div class="tb-message-content">
-            <%= simple_format(message.content.to_s.truncate(2000)) %>
+            <%= simple_format(Tracebook.redact(message.content, scope: @chat.id).to_s.truncate(2000)) %>
           </div>
         </div>
       <% end %>

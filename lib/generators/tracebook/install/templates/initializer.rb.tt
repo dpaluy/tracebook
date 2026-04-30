@@ -13,4 +13,15 @@ Tracebook.configure do |config|
 
   # Items per page in the dashboard
   # config.per_page = 25
+
+  # Optional regex/custom redaction patterns. Redaction only runs when your app
+  # explicitly calls Tracebook.redact(text).
+  # config.redact :pii, :api_keys, :auth
+
+  # Optional local OpenAI Privacy Filter sidecar. Disabled by default.
+  # If the sidecar is unavailable, Tracebook falls back to regex/custom redaction.
+  # config.openai_privacy_filter.enabled = true
+  # config.openai_privacy_filter.endpoint = "http://127.0.0.1:8765"
+  # config.openai_privacy_filter.timeout = 0.5
+  # config.openai_privacy_filter.failure_mode = :fallback
 end

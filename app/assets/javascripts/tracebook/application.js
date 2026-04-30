@@ -1,5 +1,4 @@
 (function() {
-  const STIMULUS_SRC = "https://unpkg.com/@hotwired/stimulus/dist/stimulus.umd.js";
   let booted = false;
 
   function warnStimulusMissing() {
@@ -135,11 +134,6 @@
   if (window.Stimulus) {
     startApplication();
   } else {
-    const script = document.createElement("script");
-    script.src = STIMULUS_SRC;
-    script.async = true;
-    script.onload = startApplication;
-    script.onerror = warnStimulusMissing;
-    document.head.appendChild(script);
+    warnStimulusMissing();
   }
 })();

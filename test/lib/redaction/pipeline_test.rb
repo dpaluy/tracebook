@@ -23,6 +23,40 @@ module Tracebook
         assert_equal "Patient [MEDICAL_RECORD] email [EMAIL]", result
       end
 
+      test "does not pass scope to generic one-argument custom redactors" do
+        custom = ->(text) { text.gsub(/secret/i, "[SECRET]") }
+        pipeline = Pipeline.new(custom_redactors: [ custom ])
+
+        assert_equal "The [SECRET]", pipeline.call("The secret", scope: "chat-1")
+      end
+
+      test "passes scope to openai privacy filter redactor" do
+        requests = []
+        client = Object.new
+        client.define_singleton_method(:detect) do |text|
+          requests << text
+          { "detected_spans" => [] }
+        end
+        redactor = OpenAiPrivacyFilter.new(client: client)
+        pipeline = Pipeline.new(custom_redactors: [ redactor ])
+
+        2.times { pipeline.call("Alice", scope: "chat-1") }
+
+        assert_equal [ "Alice" ], requests
+      end
+
+      test "passes scope to custom redactors that accept the keyword" do
+        received_scope = nil
+        custom = ->(text, scope: nil) {
+          received_scope = scope
+          text
+        }
+        pipeline = Pipeline.new(custom_redactors: [ custom ])
+
+        assert_equal "hello", pipeline.call("hello", scope: "chat-1")
+        assert_equal "chat-1", received_scope
+      end
+
       test "returns text unchanged when no patterns configured" do
         pipeline = Pipeline.new
         assert_equal "hello@world.com", pipeline.call("hello@world.com")

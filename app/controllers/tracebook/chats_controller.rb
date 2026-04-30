@@ -177,7 +177,7 @@ module Tracebook
       messages_json = @messages.map do |message|
         msg = {
           role: message.role,
-          content: message.content,
+          content: Tracebook.redact(message.content, scope: chat.id),
           created_at: message.created_at.iso8601
         }
 
