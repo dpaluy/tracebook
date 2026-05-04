@@ -4,7 +4,7 @@ source "https://rubygems.org"
 gemspec
 
 # Pin minitest < 6.0 until Rails supports it
-gem "minitest", "~> 5.0"
+gem "minitest", "~> 6.0"
 
 gem "puma"
 
